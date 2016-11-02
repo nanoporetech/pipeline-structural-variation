@@ -3,6 +3,6 @@ import os
 from os import path
 
 configfile: "config.yml"
-workdir: config["workdir"]
+workdir: path.join(config["workdir_top"], config["pipeline"])
 
 include: "snakelib/utils.snake"

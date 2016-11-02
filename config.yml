@@ -1,2 +1,14 @@
 ---
-workdir: "./work_dir"
+## General pipeline parameters:
+
+# Name of the pipeline:
+pipeline: "boilerplate-snakemake"
+# ABSOLUTE path to directory holding the working directory:
+workdir_top: "/home/OXFORDNANOLABS/bsipos/gt/pipeline-boilerplate-snakemake"
+# Results directory:
+resdir: "results"
+# Repository URL:
+repo: "git URL"
+
+## Pipeline-specific parameters:
+
