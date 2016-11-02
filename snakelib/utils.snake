@@ -1,0 +1,4 @@
+
+rule help:
+    run:
+        print("Will print help on targets")
