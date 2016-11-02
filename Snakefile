@@ -1,3 +1,5 @@
+WORKDIR = path.join(config["workdir_top"], config["pipeline"])
+RESDIR =  config["resdir"]
 
 import os
 from os import path

@@ -1,7 +1,3 @@
-
-WORKDIR = path.join(config["workdir_top"], config["pipeline"])
-RESDIR =  config["resdir"]
-
 import re
 
 def generate_help(sfile):
