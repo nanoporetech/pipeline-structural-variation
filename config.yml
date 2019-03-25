@@ -1,14 +1,38 @@
 ---
-## General pipeline parameters:
+# FASTQ file or folder containing FASTQ files
+input_fastq: "data/hg002_simple_test_chr12_44420446_44421533/"
+# FASTA file containing the reference genome
+reference_fastq: "data/test_reference/human_g1k_v37_part.fasta"
+# Threads used to run analysis
+threads: 1
+# Minimum q-scores. Reads with lower q-score will be discarded
+min_qscore: 6
+# Minimum SV length
+min_sv_length: 45
+# Maximum SV length
+max_sv_length: 1000000
+# Min read length. Shorter reads will be discarded
+min_read_length: 5000
+# Min mapping quality. Reads will lower mapping quality will be discarded
+min_read_mapping_quality: 10
+# Minimum read support required to call a SV (auto for auto-detect)
+min_read_support: 'auto'
+# Sample name
+sample_name: "my_sample"
 
+# (optional) BED file containing targted regions. SVs will only be called in
+# regions contained in the BED file
+# target: "data/test_reference/test_target.bed"
+
+
+#################################
+## General pipeline parameters ##
+#################################
 # Name of the pipeline:
-pipeline: "boilerplate-snakemake"
-# ABSOLUTE path to directory holding the working directory:
-workdir_top: "/home/OXFORDNANOLABS/bsipos/gt/pipeline-boilerplate-snakemake"
+pipeline: "pipeline-structural-variation"
+# path to directory holding the working directory:
+workdir_top: "test/"
 # Results directory:
 resdir: "results"
 # Repository URL:
-repo: "git URL"
-
-## Pipeline-specific parameters:
-
+repo: "https://github.com/nanoporetech/pipeline-structural-variation.git"

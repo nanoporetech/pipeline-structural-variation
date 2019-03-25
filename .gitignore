@@ -1,1 +1,6 @@
 *.pyc
+.idea/
+.snakemake/
+scripts/.eggs/
+scripts/sv_calling_glue.egg-info/
+test/
