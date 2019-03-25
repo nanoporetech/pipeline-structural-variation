@@ -7,8 +7,6 @@ from snakemake.utils import min_version
 
 min_version("5.4.3")
 
-configfile: "config.yml"
-
 # Get parent directory of snakefile
 SNAKEDIR = os.path.dirname(workflow.snakefile)
 
@@ -19,6 +17,8 @@ if workflow.configfiles:
     if os.path.isabs(conf_dir):
         CONFDIR = path.dirname(conf_dir)
 
+configfile: os.path.join(CONFDIR, "config.yml")
+
 if os.path.isabs(config["workdir_top"]):
     WORKDIR = os.path.join(config["workdir_top"], config["pipeline"])
 else:
@@ -28,6 +28,7 @@ if os.path.isabs(config["resdir"]):
     RESDIR =  config["resdir"]
 else:
     RESDIR = os.path.join(CONFDIR, config["resdir"])
+
 
 workdir: os.path.join(config["workdir_top"], config["pipeline"])
 include: "snakelib/utils.snake"
@@ -140,6 +141,7 @@ rule qc:
 
 rule json:
     input:
+        expand("sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
         expand("json/{name}_sniffles_filtered.json", name=sample)
 
 
@@ -186,20 +188,20 @@ rule call_sniffles:
         "sniffles -m {input.BAM} -v {output.VCF} -s {params.read_support} -r {params.min_read_length} -q {params.min_mq} --genotype --report_read_strands"
 
 
-rule filter_region:
-    input:
-        VCF = rules.call_sniffles.output.VCF,
-        BED = rules.bed_from_bam.output
-    output:
-        VCF = temp("sv_calls/{sample}_sniffles_region_filtered.vcf")
-    conda: "env.yml"
-    shell:
-        "bedtools intersect -header -u -a {input.VCF} -b {input.BED} > {output.VCF}"
+# rule filter_region:
+#     input:
+#         VCF = rules.call_sniffles.output.VCF,
+#         BED = rules.bed_from_bam.output
+#     output:
+#         VCF = temp("sv_calls/{sample}_sniffles_region_filtered.vcf")
+#     conda: "env.yml"
+#     shell:
+#         "bedtools intersect -header -u -a {input.VCF} -b {input.BED} > {output.VCF}"
 
 
 rule reformat_vcf:
     input:
-         VCF = rules.filter_region.output.VCF
+         VCF = rules.call_sniffles.output.VCF
     output:
          VCF = "sv_calls/{sample}_sniffles.vcf"
     conda: "env.yml"
