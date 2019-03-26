@@ -20,7 +20,7 @@ test-docker:
 
 clean:
 	@echo "Cleaning working dir"
-	snakemake --snakefile Snakemake.smk -p clean_workdir
+	snakemake -p clean_workdir
 .PHONY: clean
 
 test:
@@ -42,3 +42,7 @@ conda-uninstall:
 	@echo "Removing conda env"
 	conda remove -n ${PROJECT_NAME} --all -y
 .PHONY: conda-uninstall
+
+eval:
+	snakemake -p eval --config bam_folder=/Users/prescheneder/Analysis/sv-benchmark-data/chr12_data/GM24385_minimap2_sv_q7_chr12.bam target=/Users/prescheneder/Analysis/sv-benchmark-data/chr12_data/target.bed
+.PHONY: eval

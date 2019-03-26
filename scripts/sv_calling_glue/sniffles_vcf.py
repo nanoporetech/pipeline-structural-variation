@@ -2,6 +2,7 @@ import random
 import re
 import pybedtools
 import logging
+import sys
 
 from pysam import VariantFile
 from scipy.stats import fisher_exact

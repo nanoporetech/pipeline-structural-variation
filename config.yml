@@ -12,7 +12,7 @@ min_sv_length: 45
 # Maximum SV length
 max_sv_length: 1000000
 # Min read length. Shorter reads will be discarded
-min_read_length: 5000
+min_read_length: 1000
 # Min mapping quality. Reads will lower mapping quality will be discarded
 min_read_mapping_quality: 10
 # Minimum read support required to call a SV (auto for auto-detect)

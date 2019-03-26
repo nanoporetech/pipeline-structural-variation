@@ -25,7 +25,7 @@ class SvInfo:
             breakend_alt = pysam_vcf_rec.alts[0]
             m = re.search('.*[\[\]](.*):(.*)[\]\[].*', breakend_alt)
             self.chr2 = m.group(1)
-            self.pos2 = m.group(2)
+            self.pos2 = int(m.group(2))
 
         if len(pysam_vcf_rec.samples.keys()) != 1:
             raise RuntimeError(
