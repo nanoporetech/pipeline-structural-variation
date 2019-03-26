@@ -112,17 +112,6 @@ if "target" in config:
         print("Target BED {} not found. Continuing without target".format(target))
 
 
-
-#########################
-###### PREPROCESS #######
-#########################
-
-# Get FASTQ files from input directory
-FASTQ_FILES = []
-if FQ_INPUT_DIRECTORY:
-    FASTQ_FILES = find_file_in_folder(FQ_INPUT_DIRECTORY)
-
-
 #########################
 ######## RULES ##########
 #########################
@@ -152,7 +141,7 @@ rule eval:
 
 rule map_minimap2:
    input:
-       FQ = FASTQ_FILES,
+       FQ = FQ_INPUT_DIRECTORY,
        REF = FA_REF
    output:
        BAM = "alignment/{sample}_minimap2.bam",
@@ -163,7 +152,7 @@ rule map_minimap2:
    conda: "env.yml"
    threads: config["threads"]
    shell:
-       "cat {input.FQ} | NanoFilt -q {params.min_qscore} -l {params.min_read_length} | minimap2 -t {threads} -ax map-ont --MD -Y {input.REF} - | samtools sort -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
+       "cat_fastq {input.FQ} | NanoFilt -q {params.min_qscore} -l {params.min_read_length} | minimap2 -t {threads} -ax map-ont --MD -Y {input.REF} - | samtools sort -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
 
 
 rule bed_from_bam:
@@ -261,7 +250,7 @@ rule nanoplot_qc:
     threads: config["threads"]
     conda: "env.yml"
     shell:
-        "NanoPlot -t {threads} --bam {input.BAM} --raw -o {output.DIR} -p {params.sample}_ --N50 --title {params.sample}" # --downsample 1000
+        "NanoPlot -t {threads} --bam {input.BAM} --raw -o {output.DIR} -p {params.sample}_ --N50 --title {params.sample} --downsample 100000"
 
 
 rule calc_depth:

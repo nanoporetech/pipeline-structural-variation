@@ -30,7 +30,8 @@ setup(
             'sniffles-edit = sv_calling_glue.sniffles_edit:main',
             'sniffles-strand = sv_calling_glue.sniffles_strand:main',
             'sniffles-sample = sv_calling_glue.vcf_downsample:main',
-            'bamref2bed = sv_calling_glue.sniffles_bamref2bed:main'
+            'bamref2bed = sv_calling_glue.sniffles_bamref2bed:main',
+            'cat_fastq = sv_calling_glue.cat_fastq:main'
         ]
     }
 )
