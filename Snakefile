@@ -9,7 +9,6 @@ min_version("5.4.3")
 
 # Get parent directory of snakefile
 SNAKEDIR = os.path.dirname(workflow.snakefile)
-
 # Get parent directory of config file
 CONFDIR = SNAKEDIR
 if workflow.configfiles:
@@ -18,6 +17,8 @@ if workflow.configfiles:
         CONFDIR = path.dirname(conf_dir)
 
 configfile: os.path.join(CONFDIR, "config.yml")
+
+config['threads'] = 120
 
 if os.path.isabs(config["workdir_top"]):
     WORKDIR = os.path.join(config["workdir_top"], config["pipeline"])
@@ -61,8 +62,8 @@ def get_param_from_file(filename, default=0):
         with open(filename, "r") as fh:
             return int(float(fh.readline().strip()))
     except Exception as e:
-        print(e)
-        print("Could not read parameter from {}. Falling back to default: {}".format(filename, default))
+        #print(e)
+        #print("Could not read parameter from {}. Falling back to default: {}".format(filename, default))
         return default
 
 
@@ -86,7 +87,7 @@ if not bam_folder:
     if not os.path.exists(FQ_INPUT_DIRECTORY):
         print("Could not find {}".format(FQ_INPUT_DIRECTORY))
 
-    MAPPED_BAM = "alignment/{sample}_minimap2.bam"
+    MAPPED_BAM = "{sample}/alignment/{sample}_minimap2.bam"
 else:
     MAPPED_BAM = find_file_in_folder(bam_folder, "*.bam", single=True)
 
@@ -102,11 +103,11 @@ if "sample_name" in config:
 
 
 # Parameter: target
-target_bed = "target_{sample}.bed"
+target_bed = "{sample}/target.bed"
 if "target" in config:
     target = os.path.join(CONFDIR, config["target"])
     if os.path.exists(target):
-        # copyfile(target, "target_{}.bed".format(sample))
+        copyfile(target, "{sample}/target.bed".format(sample))
         target_bed = target
     else:
         print("Target BED {} not found. Continuing without target".format(target))
@@ -118,48 +119,65 @@ if "target" in config:
 
 rule all:
     input:
-        expand("sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
-        expand("qc/{name}/", name=sample)
+        expand("{name}/sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
+        expand("{name}/qc", name=sample),
 
 rule call:
     input:
-        expand("sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample)
+        expand("{name}/sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
 
 rule qc:
     input:
-        expand("qc/{name}/", name=sample)
+        expand("{name}/qc", name=sample),
 
 rule json:
     input:
-        expand("sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
-        expand("json/{name}_sniffles_filtered.json", name=sample)
+        expand("{name}/sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
+        expand("{name}/json/{name}_sniffles_filtered.json", name=sample),
 
 rule eval:
     input:
-        expand("eval/{name}/summary.txt", name=sample)
+        expand("{name}/eval/summary.txt", name=sample),
 
+rule init:
+    output: "init"
+    conda: "env.yml"
+    shell:
+        "pip install {SNAKEDIR}/scripts &> {output}"
+
+rule index_minimap2:
+   input:
+       REF = FA_REF
+   output:
+       "{sample}/index/minimap2.idx"
+   threads: config['threads']
+   conda: "env.yml"
+   shell:
+       "minimap2 -t {threads} -ax map-ont --MD -Y {input.REF} -d {output}"
 
 rule map_minimap2:
    input:
        FQ = FQ_INPUT_DIRECTORY,
-       REF = FA_REF
+       IDX = rules.index_minimap2.output
    output:
-       BAM = "alignment/{sample}_minimap2.bam",
-       BAI = "alignment/{sample}_minimap2.bam.bai"
+       BAM = "{sample}/alignment/{sample}_minimap2.bam",
+       BAI = "{sample}/alignment/{sample}_minimap2.bam.bai"
    params:
        min_qscore = config["min_qscore"] if "min_qscore" in config else 6,
-       min_read_length = config["min_read_length"] if "min_read_length" in config else 1000
+       min_read_length = config["min_read_length"] if "min_read_length" in config else 1000,
+       sort_threads = max(1, (max(1, config["threads"]) * 0.1))
    conda: "env.yml"
    threads: config["threads"]
    shell:
-       "cat_fastq {input.FQ} | NanoFilt -q {params.min_qscore} -l {params.min_read_length} | minimap2 -t {threads} -ax map-ont --MD -Y {input.REF} - | samtools sort -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
+       "cat_fastq {input.FQ} | minimap2 -t {threads} -ax map-ont --MD -Y {input.IDX} - | samtools sort -@ {params.sort_threads} -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
 
 
 rule bed_from_bam:
     input:
-        BAM = MAPPED_BAM
+        BAM = MAPPED_BAM,
+        SETUP = "init"
     output:
-        "target_{sample}.bed"
+        "{sample}/target.bed"
     params:
         filter = "_Un _random"
     conda: "env.yml"
@@ -171,7 +189,7 @@ rule call_sniffles:
     input:
         BAM = MAPPED_BAM,
     output:
-        VCF = temp("sv_calls/{sample}_sniffles_tmp.vcf")
+        VCF = temp("{sample}/sv_calls/{sample}_sniffles_tmp.vcf")
     params:
         read_support = 3,
         min_read_length = config['min_read_length'] if 'min_read_length' in config else 1000,
@@ -185,9 +203,10 @@ rule call_sniffles:
 rule filter_region:
     input:
         VCF = rules.call_sniffles.output.VCF,
-        BED = rules.bed_from_bam.output
+        BED = rules.bed_from_bam.output,
+        SETUP = "init"
     output:
-        VCF = temp("sv_calls/{sample}_sniffles_region_filtered.vcf")
+        VCF = temp("{sample}/sv_calls/{sample}_sniffles_region_filtered.vcf")
     conda: "env.yml"
     shell:
         "bedtools intersect -header -u -a {input.VCF} -b {input.BED} > {output.VCF}"
@@ -195,9 +214,10 @@ rule filter_region:
 
 rule reformat_vcf:
     input:
-         VCF = rules.filter_region.output.VCF
+         VCF = rules.filter_region.output.VCF,
+         SETUP = "init"
     output:
-         VCF = "sv_calls/{sample}_sniffles.vcf"
+         VCF = "{sample}/sv_calls/{sample}_sniffles.vcf"
     conda: "env.yml"
     shell:
          "sniffles-edit --ins-length --check --vcf-version -v {input.VCF} -o {output.VCF}"
@@ -206,9 +226,10 @@ rule reformat_vcf:
 rule filter_vcf:
     input:
          VCF = rules.reformat_vcf.output.VCF,
-         RS = "{sample}_parameter_min_read_support.tsv"
+         RS = "{sample}/parameter_min_read_support.tsv",
+         SETUP = "init"
     output:
-         VCF = temp("sv_calls/{sample}_sniffles_filtered_tmp.vcf")
+         VCF = temp("{sample}/sv_calls/{sample}_sniffles_filtered_tmp.vcf")
     params:
         min_read_support = lambda wildcards: get_param_from_file("{}_parameter_min_read_support.tsv".format(wildcards.sample), default=10),
         min_sv_length = config['min_sv_length'] if "min_sv_length" in config else 50,
@@ -224,7 +245,7 @@ rule sort_vcf:
     input:
         VCF = rules.filter_vcf.output.VCF
     output:
-        VCF = temp("sv_calls/{sample}_sniffles_filtered.vcf")
+        VCF = temp("{sample}/sv_calls/{sample}_sniffles_filtered.vcf")
     conda: "env.yml"
     shell:
          "vcfsort {input.VCF} > {output.VCF}"
@@ -234,7 +255,7 @@ rule index_vcf:
     input:
          VCF = rules.sort_vcf.output.VCF
     output:
-         VCF = "sv_calls/{sample}_sniffles_filtered.vcf.gz"
+         VCF = "{sample}/sv_calls/{sample}_sniffles_filtered.vcf.gz"
     conda: "env.yml"
     shell:
          "cat {input.VCF} | bgziptabix {output.VCF}"
@@ -244,7 +265,7 @@ rule nanoplot_qc:
     input:
         BAM = MAPPED_BAM
     output:
-        DIR = directory("qc/{sample}")
+        DIR = directory("{sample}/qc")
     params:
         sample = sample
     threads: config["threads"]
@@ -258,19 +279,19 @@ rule calc_depth:
          BAM = MAPPED_BAM,
          BED = target_bed
     output:
-        DIR = directory("depth/{sample}/"),
+        DIR = directory("{sample}/depth"),
     threads: config["threads"]
     conda: "env.yml"
     shell:
-         "mosdepth -x -t {threads} -n -b {input.BED} {output.DIR}/{sample} {input.BAM}"
+         "mkdir -p {output.DIR}; mosdepth -x -t {threads} -n -b {input.BED} {output.DIR}/{sample} {input.BAM}"
 
 
 rule auto_read_support:
     input:
-         "depth/{sample}/"
+         "{sample}/depth"
     output:
-        "{sample}_parameter_min_read_support.tsv"
-    conda: "env.yml"
+         "{sample}/parameter_min_read_support.tsv"
+    #conda: "env.yml"
     run:
         with open(output[0], "w") as out:
             if "min_read_support" not in config or config["min_read_support"] == "auto":
@@ -299,9 +320,10 @@ rule telemetry:
          BAM = MAPPED_BAM,
          VCF = rules.sort_vcf.output.VCF,
          DEPTH = rules.calc_depth.output.DIR,
-         RS = rules.auto_read_support.output
+         RS = rules.auto_read_support.output,
+         SETUP = "init"
     output:
-          "json/{sample}_sniffles_filtered.json"
+          "{sample}/json/{sample}_sniffles_filtered.json"
     conda: "env.yml"
     shell:
          "sniffles-telemetry -v {input.VCF} -b {input.BAM} -d {input.DEPTH}/{sample}.regions.bed.gz -s {input.RS} > {output}"
@@ -330,7 +352,7 @@ rule intersect_target_highconf:
         TRUTH_BED = rules.download_hg002_truthset.output.BED,
         TARGET = target_bed
     output:
-        BED = "eval_high_conf_{sample}.bed"
+        BED = "{sample}/eval_high_conf.bed"
     conda: "env.yml"
     shell:
         "bedtools intersect -a {input.TRUTH_BED} -b {input.TARGET} > {output.BED}"
@@ -344,7 +366,7 @@ rule eval_vcf:
         TRUTH_VCF = rules.download_hg002_truthset.output.VCF,
         TRUTH_BED = rules.intersect_target_highconf.output.BED
     output:
-        "eval/{sample}/summary.txt",
+        "{sample}/eval/summary.txt",
     conda: "env.yml"
     shell:
-        "rmdir eval/{sample}/ && python {input.SCRIPT} --passonly -b {input.TRUTH_VCF} --includebed {input.TRUTH_BED} --pctsize 0 --pctsim 0 -t -c {input.VCF} -f {input.REF} -o eval/{sample}/" # > {output.JSON}"
+        "rmdir {sample}/eval/ && python {input.SCRIPT} --passonly -b {input.TRUTH_VCF} --includebed {input.TRUTH_BED} --pctsize 0 --pctsim 0 -t -c {input.VCF} -f {input.REF} -o eval/{sample}/" # > {output.JSON}"
