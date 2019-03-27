@@ -78,7 +78,7 @@ if "bam_folder" in config:
     bam_folder = os.path.join(CONFDIR, config["bam_folder"])
 
 # INPUT FASTQ folder
-FQ_INPUT_DIRECTORY = None
+FQ_INPUT_DIRECTORY = []
 if not bam_folder:
     if not "input_fastq" in config:
         print("\"input_fastq\" not specified in config file. Exiting...")
@@ -107,7 +107,7 @@ target_bed = "{sample}/target.bed"
 if "target" in config:
     target = os.path.join(CONFDIR, config["target"])
     if os.path.exists(target):
-        copyfile(target, "{sample}/target.bed".format(sample))
+        # copyfile(target, "{}/target.bed".format(sample))
         target_bed = target
     else:
         print("Target BED {} not found. Continuing without target".format(target))
@@ -231,7 +231,7 @@ rule filter_vcf:
     output:
          VCF = temp("{sample}/sv_calls/{sample}_sniffles_filtered_tmp.vcf")
     params:
-        min_read_support = lambda wildcards: get_param_from_file("{}_parameter_min_read_support.tsv".format(wildcards.sample), default=10),
+        # min_read_support = lambda wildcards: get_param_from_file("{}_parameter_min_read_support.tsv".format(wildcards.sample), default=10),
         min_sv_length = config['min_sv_length'] if "min_sv_length" in config else 50,
         max_sv_length = config['max_sv_length'] if "max_sv_length" in config else 400000,
         strand_support = config['advanced_strand_support'] if "advanced_strand_support" in config else 0.05,
@@ -239,7 +239,7 @@ rule filter_vcf:
         min_af = config['advanced_min_af'] if "advanced_min_af" in config else 0.15
     conda: "env.yml"
     shell:
-         "sniffles-filter -v {input.VCF} -m {params.min_read_support} -t {params.sv_types}  --strand-support {params.strand_support} -l {params.min_sv_length} --min-af {params.min_af} --max-length {params.max_sv_length} -o {output.VCF}"
+         "sniffles-filter -v {input.VCF} -m `cat {input.RS}` -t {params.sv_types}  --strand-support {params.strand_support} -l {params.min_sv_length} --min-af {params.min_af} --max-length {params.max_sv_length} -o {output.VCF}"
 
 rule sort_vcf:
     input:
