@@ -177,6 +177,9 @@ def main(argv=sys.argv[1:]):
         record.set('vcf', base_encode64(vcf_file))
         record.set('timestamp', datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
 
+    for call in get_calls_from_vcf(vcf_file):
+        print(call, file=sys.stderr)
+
 
 if __name__ == '__main__':
 

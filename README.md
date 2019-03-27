@@ -20,43 +20,68 @@ Bullet point the features that distinguish it from pre-existing or similar softw
 
 # Getting Started
 
-Describe a succint 101 on how to install, run and get software going.
+### Input
 
-### Input and Output
+| Input | Description |
+|-------|-------------|
+| Reference genome | FASTA file containing the reference genome (e.g. GRCh38 for human) |
+| Nanopore reads| Folder containing FASTQ files or a single concatenated FASTQ file. Reads should be **q-scores filtered** (see FAQ)|
 
-Details on sequence structure e.g. fast5, unaligned, ccs-like equivalent for ONT, raw data, capital/lower case, named, ordered, barcoded etc. Details on output structure of file and sequence and any formats that may apply - can these be reinserted into subsequent software for refinement etc.? 
-
+### Output
+| Output | Description |
+|--------|-------------|
+| Aligned reads | Aligned reads in indexed and sorted BAM format |
+| Varaint calls | Called variants in VCF format |
 ### Dependencies
 
-Software/hardware/usage depedencies
+- [miniconda3](https://conda.io/miniconda.html) - install it according to the [instructions](https://conda.io/docs/user-guide/install/index.html).
+- [snakemake](https://anaconda.org/bioconda/snakemake) install using `conda`.
+- The rest of the dependencies are automatically installed using the `conda` feature of `snakemake`.
 
 ### Installation
 
-Describe the stages necessary for installing software on various platforms/OS etc. exporting/importing files, how to run/where to run in which software/browswer etc.
+After installing miniconda3 and snakemake (see dependencies), setup the pipeline as follows:
+```bash
+# Get pipeline
+$ git clone https://github.com/nanoporetech/pipeline-structural-variation.git
+# Unzip
 
-#### Compilation From Source
+$ conda env create -n pipeline-structural-variation -f env.yml
+$ conda activate pipeline-structural-variation
+# To test if the installation worked run
+$ snakemake --use-conda  -p all
 
-Building the environment and compiling the software/pipeline/api/tool etc. from source
-
-#### Alternative Installation Methods
-
-Any other installation method.
+```
 
 ### Usage: 
 
-Per tool there should be
+```bash
 
-#### "Tool Name" (A)
+```
 
-A1. Coded Help messages
+#### Run using docker
 
-A2. Examples of code parametes and runs
+Any other installation method.
 
-#### "Tool Name" (B)
+#### Setup conda environment manually
 
-B1. Coded Help messages
+```bash
+# Get pipeline
+$ git clone https://github.com/nanoporetech/pipeline-structural-variation.git
+# Unzip
+# Create conda environment
+$ conda env create -n pipeline-structural-variation -f env.yml
+# Activate environment
+$ conda activate pipeline-structural-variation
+# To test if the installation worked run (don't use --use-conda)
+$ snakemake -p all
+```
 
-B2. Examples of code parametes and runs
+
+#### Options
+
+
+
 
 ******************
 

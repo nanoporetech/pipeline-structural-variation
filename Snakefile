@@ -62,8 +62,8 @@ def get_param_from_file(filename, default=0):
         with open(filename, "r") as fh:
             return int(float(fh.readline().strip()))
     except Exception as e:
-        #print(e)
-        #print("Could not read parameter from {}. Falling back to default: {}".format(filename, default))
+        print(e)
+        print("Could not read parameter from {}. Falling back to default: {}".format(filename, default))
         return default
 
 
@@ -189,7 +189,7 @@ rule call_sniffles:
     input:
         BAM = MAPPED_BAM,
     output:
-        VCF = temp("{sample}/sv_calls/{sample}_sniffles_tmp.vcf")
+        VCF = "{sample}/sv_calls/{sample}_sniffles_tmp.vcf"
     params:
         read_support = 3,
         min_read_length = config['min_read_length'] if 'min_read_length' in config else 1000,
@@ -200,21 +200,21 @@ rule call_sniffles:
         "sniffles -m {input.BAM} -v {output.VCF} -s {params.read_support} -r {params.min_read_length} -q {params.min_mq} --genotype --report_read_strands"
 
 
-rule filter_region:
-    input:
-        VCF = rules.call_sniffles.output.VCF,
-        BED = rules.bed_from_bam.output,
-        SETUP = "init"
-    output:
-        VCF = temp("{sample}/sv_calls/{sample}_sniffles_region_filtered.vcf")
-    conda: "env.yml"
-    shell:
-        "bedtools intersect -header -u -a {input.VCF} -b {input.BED} > {output.VCF}"
+#rule filter_region:
+#    input:
+#        VCF = rules.call_sniffles.output.VCF,
+#        BED = rules.bed_from_bam.output,
+#        SETUP = "init"
+#    output:
+#        VCF = temp("{sample}/sv_calls/{sample}_sniffles_region_filtered.vcf")
+#    conda: "env.yml"
+#    shell:
+#        "bedtools intersect -header -u -a {input.VCF} -b {input.BED} > {output.VCF}"
 
 
 rule reformat_vcf:
     input:
-         VCF = rules.filter_region.output.VCF,
+         VCF = rules.call_sniffles.output.VCF,
          SETUP = "init"
     output:
          VCF = "{sample}/sv_calls/{sample}_sniffles.vcf"
@@ -231,7 +231,6 @@ rule filter_vcf:
     output:
          VCF = temp("{sample}/sv_calls/{sample}_sniffles_filtered_tmp.vcf")
     params:
-        # min_read_support = lambda wildcards: get_param_from_file("{}_parameter_min_read_support.tsv".format(wildcards.sample), default=10),
         min_sv_length = config['min_sv_length'] if "min_sv_length" in config else 50,
         max_sv_length = config['max_sv_length'] if "max_sv_length" in config else 400000,
         strand_support = config['advanced_strand_support'] if "advanced_strand_support" in config else 0.05,
@@ -299,13 +298,16 @@ rule auto_read_support:
                 with gzip.open(mosdepth_file, "r") as fh:
                     sum_depth = 0
                     count_depth = 0
+                    total_size = 0
                     for line in fh:
                         if not line:
                             continue
                         cols = line.strip().split(b"\t")
-                        sum_depth += float(cols[3])
+                        sum_depth += float(cols[3]) * int(cols[2])
+			total_size += int(cols[2])
                         count_depth += 1
-                min_rs = round((sum_depth / count_depth) * 0.3)
+                print(sum_depth, total_size, count_depth)
+                min_rs = round((sum_depth / total_size) * 0.3)
             else:
                 min_rs = config["min_read_support"]
 
@@ -369,4 +371,4 @@ rule eval_vcf:
         "{sample}/eval/summary.txt",
     conda: "env.yml"
     shell:
-        "rmdir {sample}/eval/ && python {input.SCRIPT} --passonly -b {input.TRUTH_VCF} --includebed {input.TRUTH_BED} --pctsize 0 --pctsim 0 -t -c {input.VCF} -f {input.REF} -o eval/{sample}/" # > {output.JSON}"
+        "rmdir {sample}/eval/ && python {input.SCRIPT} --passonly -b {input.TRUTH_VCF} --includebed {input.TRUTH_BED} --pctsize 0 --pctsim 0 -t -c {input.VCF} -f {input.REF} -o {sample}/eval/"
