@@ -75,7 +75,7 @@ class SvFile:
 
     def check(self):
         for variant in self._variants:
-            if variant.pos1 >= variant.pos2:
+            if variant.pos1 >= variant.pos2 and variant.type != 'BND':
                 logging.warning("POS1 >= POS2 for:")
                 logging.warning("{}".format(variant))
 
