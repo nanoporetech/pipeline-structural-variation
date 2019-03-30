@@ -8,10 +8,9 @@
 
 ### Overview
 
-
+`pipeline-structural-variation` is a pipeline for calling structural variations for whole genome sequencing Oxford Nanopore data. It accepts FASTQ files and outputs aligned reads and filtered SV calls.
 
 ### Features
-
 The pipeline performs the following steps: 
 - Maps reads using minimap2
 - Produces QC report using NanoPlot
@@ -26,11 +25,12 @@ The pipeline performs the following steps:
 ### Dependencies
 
 To run the pipeline the following software packages have to be installed on your system:
-
 - [miniconda3](https://conda.io/miniconda.html) - install it according to the [instructions](https://conda.io/docs/user-guide/install/index.html).
-- [snakemake](https://anaconda.org/bioconda/snakemake) install using `conda`.
-- The rest of the dependencies are automatically installed using the `conda` feature of `snakemake`.
-
+- [snakemake](https://anaconda.org/bioconda/snakemake) install using `conda` as follows:
+```bash
+$ conda install -y snakemake
+```
+Alternatively, you can run the pipeline using [docker](https://www.docker.com/). In this case only a working docker installation is required (see alternative installation methods).
 ### Installation
 
 After installing miniconda3 and snakemake (see dependencies), install the pipeline as follows:
@@ -283,6 +283,8 @@ If you use this pipeline please cite:
 - Sedlazeck, F. J., Rescheneder, P., Smolka, M., Fang, H., Nattestad, M., von Haeseler, A., & Schatz, M. C. (2018). Accurate detection of complex structural variations using single-molecule sequencing. Nature Methods, 15(6), 461–468. https://doi.org/10.1038/s41592-018-0001-7
 - Pedersen, B. S., & Quinlan, A. R. (2018). Mosdepth: quick coverage calculation for genomes and exomes. Bioinformatics, 34(5), 867–868. https://doi.org/10.1093/bioinformatics/btx699
 
+When using the QC report please also cite:
+- De Coster, W., D’Hert, S., Schultz, D. T., Cruts, M., & Van Broeckhoven, C. (2018). NanoPack: visualizing and processing long-read sequencing data. Bioinformatics, 34(15), 2666–2669. https://doi.org/10.1093/bioinformatics/bty149
 
 ##### For additional information on SV and SV calling please see:
 
