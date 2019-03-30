@@ -33,11 +33,14 @@ $ conda install -y snakemake
 Alternatively, you can run the pipeline using [docker](https://www.docker.com/). In this case only a working docker installation is required (see alternative installation methods).
 ### Installation
 
-After installing miniconda3 and snakemake (see dependencies), install the pipeline as follows:
+After installing miniconda3 and snakemake (see above), install the pipeline as follows:
 ```bash
 # Get pipeline
-$ git clone https://github.com/nanoporetech/pipeline-structural-variation.git
-$ cd pipeline-structural-variation
+$ wget -O pipeline-structural-variation.tar.gz  https://github.com/nanoporetech/pipeline-structural-variation/archive/v1.2.0.tar.gz
+# Unzip
+$ tar xvzf pipeline-structural-variation.tar.gz
+# Change to directory
+$ cd pipeline-structural-variation-* 
 # To test if the installation worked run
 $ snakemake --use-conda  -p all
 ```
