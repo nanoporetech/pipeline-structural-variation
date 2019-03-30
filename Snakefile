@@ -73,13 +73,13 @@ def get_param_from_file(filename, default=0):
 
 
 # INPUT BAM folder
-bam_folder = None
-if "bam_folder" in config:
-    bam_folder = os.path.join(CONFDIR, config["bam_folder"])
+bam = None
+if "bam" in config:
+    bam = os.path.join(CONFDIR, config["bam"])
 
 # INPUT FASTQ folder
 FQ_INPUT_DIRECTORY = []
-if not bam_folder:
+if not bam:
     if not "input_fastq" in config:
         print("\"input_fastq\" not specified in config file. Exiting...")
 
@@ -89,7 +89,7 @@ if not bam_folder:
 
     MAPPED_BAM = "{sample}/alignment/{sample}_minimap2.bam"
 else:
-    MAPPED_BAM = find_file_in_folder(bam_folder, "*.bam", single=True)
+    MAPPED_BAM = find_file_in_folder(bam, "*.bam", single=True)
 
 
 # Input reference FASTA
@@ -137,13 +137,13 @@ rule json:
 
 rule eval:
     input:
-        expand("{name}/eval/summary.txt", name=sample),
+        expand("{name}/evaluation_summary.json", name=sample),
 
 rule init:
     output: "init"
     conda: "env.yml"
     shell:
-        "pip install {SNAKEDIR}/scripts &> {output}"
+        "pip install {SNAKEDIR}/lib &> {output}"
 
 rule index_minimap2:
    input:
@@ -200,21 +200,21 @@ rule call_sniffles:
         "sniffles -m {input.BAM} -v {output.VCF} -s {params.read_support} -r {params.min_read_length} -q {params.min_mq} --genotype --report_read_strands"
 
 
-#rule filter_region:
-#    input:
-#        VCF = rules.call_sniffles.output.VCF,
-#        BED = rules.bed_from_bam.output,
-#        SETUP = "init"
-#    output:
-#        VCF = temp("{sample}/sv_calls/{sample}_sniffles_region_filtered.vcf")
-#    conda: "env.yml"
-#    shell:
-#        "bedtools intersect -header -u -a {input.VCF} -b {input.BED} > {output.VCF}"
+rule filter_region:
+   input:
+       VCF = rules.call_sniffles.output.VCF,
+       BED = rules.bed_from_bam.output,
+       SETUP = "init"
+   output:
+       VCF = temp("{sample}/sv_calls/{sample}_sniffles_region_filtered.vcf")
+   conda: "env.yml"
+   shell:
+        "bcftools view -T {input.BED} {input.VCF} -o {output.VCF}"
 
 
 rule reformat_vcf:
     input:
-         VCF = rules.call_sniffles.output.VCF,
+         VCF = rules.filter_region.output.VCF,
          SETUP = "init"
     output:
          VCF = "{sample}/sv_calls/{sample}_sniffles.vcf"
@@ -290,32 +290,9 @@ rule auto_read_support:
          "{sample}/depth"
     output:
          "{sample}/parameter_min_read_support.tsv"
-    #conda: "env.yml"
-    run:
-        with open(output[0], "w") as out:
-            if "min_read_support" not in config or config["min_read_support"] == "auto":
-                mosdepth_file = os.path.join(input[0], "{}.regions.bed.gz".format(wildcards.sample))
-                with gzip.open(mosdepth_file, "r") as fh:
-                    sum_depth = 0
-                    count_depth = 0
-                    total_size = 0
-                    for line in fh:
-                        if not line:
-                            continue
-                        cols = line.strip().split(b"\t")
-                        sum_depth += float(cols[3]) * int(cols[2])
-			total_size += int(cols[2])
-                        count_depth += 1
-                print(sum_depth, total_size, count_depth)
-                min_rs = round((sum_depth / total_size) * 0.3)
-            else:
-                min_rs = config["min_read_support"]
-
-            if min_rs < 5:
-                print("Min read support < 5 not allowed. Falling back to minimum of 5.")
-                min_rs = 5
-            print(min_rs, file=out)
-
+    conda: "env.yml"
+    script:
+         "{}/scripts/auto_read_support.py".format(SNAKEDIR)
 
 rule telemetry:
     input:
@@ -368,7 +345,7 @@ rule eval_vcf:
         TRUTH_VCF = rules.download_hg002_truthset.output.VCF,
         TRUTH_BED = rules.intersect_target_highconf.output.BED
     output:
-        "{sample}/eval/summary.txt",
+        "{sample}/evaluation_summary.json",
     conda: "env.yml"
     shell:
-        "rmdir {sample}/eval/ && python {input.SCRIPT} --passonly -b {input.TRUTH_VCF} --includebed {input.TRUTH_BED} --pctsize 0 --pctsim 0 -t -c {input.VCF} -f {input.REF} -o {sample}/eval/"
+        "python {input.SCRIPT} --passonly -b {input.TRUTH_VCF} --includebed {input.TRUTH_BED} --pctsize 0 --pctsim 0 -t -c {input.VCF} -f {input.REF} -o {sample}/eval/ > {output}"

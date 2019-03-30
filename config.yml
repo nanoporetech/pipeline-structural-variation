@@ -20,7 +20,7 @@ min_read_support: 'auto'
 # Sample name
 sample_name: "my_sample"
 
-# (optional) BED file containing targted regions. SVs will only be called in
+# (optional) BED file containing targeted regions. SVs will only be called in
 # regions contained in the BED file
 # target: "data/test_reference/test_target.bed"
 

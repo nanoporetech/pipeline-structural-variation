@@ -4,3 +4,7 @@
 scripts/.eggs/
 scripts/sv_calling_glue.egg-info/
 test/
+app.py
+lib/.eggs/
+lib/pipeline_structural_variation.egg-info/
+lib/pipeline_structural_variation/__pycache__/
