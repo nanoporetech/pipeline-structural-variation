@@ -1,4 +1,5 @@
 
+
 ![.](ONT_logo.png "Oxford Nanopore Technologies")
 
 ******************
@@ -8,7 +9,6 @@
 ### Overview
 
 
-Brief description in non-slang, explicit terms that facilitate the biological understanding of the data analysis provided by the software. Few sentences. Include biological concepts if appliable. **Link out to ReadtheDocs** specific to the repository and a explanation for further information see, `here <https://readthedocs.org/>`_
 
 ### Features
 
@@ -17,10 +17,31 @@ The pipeline performs the following steps:
 - Produces QC report using NanoPlot
 - Estimates appropriate parameters for variant calling depending on input coverage
 - Calls variants using sniffles
+- Filters variants
 
 ******************
 
 # Getting Started
+
+### Dependencies
+
+To run the pipeline the following software packages have to be installed on your system:
+
+- [miniconda3](https://conda.io/miniconda.html) - install it according to the [instructions](https://conda.io/docs/user-guide/install/index.html).
+- [snakemake](https://anaconda.org/bioconda/snakemake) install using `conda`.
+- The rest of the dependencies are automatically installed using the `conda` feature of `snakemake`.
+
+### Installation
+
+After installing miniconda3 and snakemake (see dependencies), install the pipeline as follows:
+```bash
+# Get pipeline
+$ git clone https://github.com/nanoporetech/pipeline-structural-variation.git
+$ cd pipeline-structural-variation
+# To test if the installation worked run
+$ snakemake --use-conda  -p all
+```
+When run for the first time snakemake will automatically set up the required conda environment and install all necessary tools. Depending on hardware and connection speed this might take up to 10-20 min.
 
 ### Input
 
@@ -40,41 +61,28 @@ The main output files created by the pipeline are:
 | Aligned reads | Aligned reads in indexed and sorted BAM format |
 | Variant calls | Called variants in VCF format |
 
-### Dependencies
-
-To run the pipeline the following software packages have to be installed on your system:
-
-- [miniconda3](https://conda.io/miniconda.html) - install it according to the [instructions](https://conda.io/docs/user-guide/install/index.html).
-- [snakemake](https://anaconda.org/bioconda/snakemake) install using `conda`.
-- The rest of the dependencies are automatically installed using the `conda` feature of `snakemake`.
-
-### Installation
-
-After installing miniconda3 and snakemake (see dependencies), install the pipeline as follows:
-```bash
-# Get pipeline
-$ git clone https://github.com/nanoporetech/pipeline-structural-variation.git
-# Unzip
-
-$ conda env create -n pipeline-structural-variation -f env.yml
-$ conda activate pipeline-structural-variation
-# To test if the installation worked run
-$ snakemake --use-conda  -p all
-
-```
+After the pipeline finished you can find the aligned reads in `{output_folder}/alignment/` and the indexed and zipped VCF file in `output_folder/sv_calls/{sample_name}_sniffles_filtered.vcf`.
 
 ### Usage: 
 
-
-
+To run the pipeline with default settings invoke snakemake as follows.
 ```bash
-
+$ snakemake -j 30 all --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa
 ```
+`-j` specifies how many CPU cores will be used by the pipeline. `all` is the default target (see Targets) and will run all steps required for SV calling and produce a QC report for the input reads using NanoPlot. `input_fastq` specifies the input FASTQ files or a folder containing multiple input FASTQ files (e.g. the pass folder from Minkow).
 
+
+### Alternative installation methods
 #### Run using docker
 
-Not available yet
-
+To avoid installing *conda* on your system you can run the pipeline using docker. The only requirement is a working docker installation on your system. First build the docker image:
+```bash
+$ make build
+```
+Next, run pipeline as follows:
+```bash
+docker run -ti -w `pwd` -v `pwd`:`pwd` pipeline-structural-variation snakemake all
+```
 #### Setup conda environment manually
 
 If you want to setup your conda environment manually follow the instructions below, activate the "environment" before running snakemake and skip the `--use-conda` parameter.
@@ -90,19 +98,26 @@ $ conda activate pipeline-structural-variation
 # To test if the installation worked run (don't use --use-conda)
 $ snakemake -p all
 # Deactivate environment
-# conda deactivate
-
+$ conda deactivate
 ```
 
+### Targets
 
-#### Options
+|Name| Description |
+|--|--|
+| all | Maps reads, calls variants and produces a QC report from the input reads |
+| qc | Only maps reads and produces a QC report |
+| call | Maps reads and calls variants but does not produces QC report |
+| eval | Evaluates the called variants against the GIAB truth set **only applicable when sequencing [HG002](https://www.coriell.org/0/Sections/Search/Sample_Detail.aspx?Ref=NA24385&Product=DNA) |
+
+### Options
 
 The pipeline accepts several input parameters. They can either be changed in the `config.yml` (see below) file ore specified when running snakemake.
 For example:
 ```bash
-snakemake -j 30 eval --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa
+snakemake -j 30 eval --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa min_sv_length=100
 ``` 
-
+In the above example the minimum SV length parameters was changed to 100 bp.
 ##### Required parameters
 
 These parameters have to be specified to run the pipeline.
@@ -117,7 +132,6 @@ These parameters have to be specified to run the pipeline.
 | Parameter | Allowed | Default | Description |
 |-----------|---------|---------|-------------|
 | sample_name | string without spaces | my_sample | Name of the sample |
-| threads | Integer number | 1 | Threads to use when running analysis |
 | min_sv_length | Integer > 40 | 50 | Minimum SV length | 
 | max_sv_length | Integer | 1000000 | Maximum SV length | 
 | min_read_length | Integer | 1000 | Min read length. Shorter reads will be ignored |
@@ -127,11 +141,44 @@ These parameters have to be specified to run the pipeline.
 
 # What to do with the results?
 
+## Annotate
+
+This step will become part of the pipeline in the future. Currently, use tools like `bedtools` or `vcfanno` to annotate the VCF file with information about genes, repeats, known SV etc. from GTF/GFF/BED files.
+There are many ways to retrieve annotations. A few examples are:
+- [UCSC genome browser](https://genome.ucsc.edu/cgi-bin/hgTables) 
+- [ENSEMBL](https://www.ensembl.org/index.html)
+- [GENCODE](https://www.gencodegenes.org/)
+
 ## Visualise
 
-### IGV
+### Integrated genome viewer
+Download from [here](http://software.broadinstitute.org/software/igv/). 
+Supported formats: BAM, BED, VCF, WIG, …
 
+**Recommended settings for SV:**
+View -> Preferences -> Alignments
+- Quick consensus mode on
+- Hide indels < 10 bp
+- Label indels > 30 bp
+- Mapping quality threshold: 20
 
+** Works well for:**
+- Deletions and insertions
+- Inspect reference sequence and flanking regions
+- Compare to annotations
+- Inspect heterozygous variants
+
+### Ribbon
+Find [here](http://genomeribbon.com/). 
+Supported format: BAM, BED, VCF
+
+**Recommended settings for SV:**
+- Multi-read settings -> minimum number of alignments -> 4-5
+- Single-read settings -> Dot plot
+
+**Works well for:**
+- Visualizing split alignments
+- Inversions, Translocations, Duplications
 
 ******************
 
@@ -157,6 +204,18 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 
 ### FAQs
 
+**I only want my results! What should I do?**
+
+Install pipeline (see Installation) and run as follows. 
+```bash
+$ snakemake -j 16 all --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa
+```
+You will find your results in the following locations:
+**Aligned reads:**
+```results/my_samples/alignment/my_sample_minimap2.bam```
+**Variant calls:**
+```results/my_samples/sv_calls/my_sample_sniffles_filtered.vcf.gz```
+
 **What kind of structural variants are supported?**
 
 Currently the pipeline has been validate for detection insertions, deletions and duplications from whole genome sequencing data. Support for inversions and translocation will be added in the future.  
@@ -177,15 +236,17 @@ When running with 30 CPU cores roughly 6-8 hours.
 
 Memory consumption is determined by minimap2. Therefore, 16 GB will be required for human datasets. For smaller genomes 8 GB will be sufficient. 
 
+**How much storage will I need?**
+
 Unzipped FASTQ files for a human 30X human dataset will require roughly 200 GB. In addition 150 GB will be required for the mapped BAM files.  
 
 **Are FAST5 files required to run the pipeline?**
 
 No
 
-**Can I use the pipeline to detect variants in a cancer dataset?**
+**Can I use the pipeline to detect variants in a cancer dataset or to detect somatic variants?**
 
-The pipeline has not been validated yet on cancer samples.
+The pipeline has not yet been validated on cancer samples or for somatic variant detection.
 
 **Can I use the pipeline to detect SVs for targeted sequencing experiments (e.g. long amplicons, etc.)?**
 
@@ -201,10 +262,10 @@ snakemake -j 30 eval --config input_fastq=/data/pass/ reference_fasta=/data/ref/
 Make sure that the chromosome names in the BED file match the names in your reference FASTA files (e.g. chr1 vs. 1)
 
 **Can I use this pipeline to detect gene fusion using DNA data?**
-The current version does not support calling gene fusions from DNA data. However, support for calling translocations will be available in the future. 
+The current version does not support calling gene fusions from DNA data as translocation calling is not supported yet. However, support for translocations will be available in the future. 
 
 **Can I use this pipeline to detect gene fusion using cDNA data?**
-cDNA data is currently not supported
+cDNA data is not supported
 
 ### Abbreviations
 
@@ -212,6 +273,7 @@ cDNA data is currently not supported
 |--|--|
 | SV | Structural variation |
 | WGS | Whole genome sequencing |
+| Target | Targets or rules are used by snakemake to define what steps of the pipeline should be executed. Changing the target can modify the behaviour of the pipeline to fit certain applications better |
 
 ### References and Supporting Information
 
