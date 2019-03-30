@@ -24,12 +24,17 @@ The pipeline performs the following steps:
 
 ### Input
 
+To run the pipeline the following input files are required:
+
 | Input | Description |
 |-------|-------------|
 | Reference genome | FASTA file containing the reference genome (e.g. GRCh38 for human) |
 | Nanopore reads| Folder containing FASTQ files or a single concatenated FASTQ file. Reads should be **q-scores filtered** (see FAQ)|
 
 ### Output
+
+The main output files created by the pipeline are:
+
 | Output | Description |
 |--------|-------------|
 | Aligned reads | Aligned reads in indexed and sorted BAM format |
@@ -37,13 +42,15 @@ The pipeline performs the following steps:
 
 ### Dependencies
 
+To run the pipeline the following software packages have to be installed on your system:
+
 - [miniconda3](https://conda.io/miniconda.html) - install it according to the [instructions](https://conda.io/docs/user-guide/install/index.html).
 - [snakemake](https://anaconda.org/bioconda/snakemake) install using `conda`.
 - The rest of the dependencies are automatically installed using the `conda` feature of `snakemake`.
 
 ### Installation
 
-After installing miniconda3 and snakemake (see dependencies), setup the pipeline as follows:
+After installing miniconda3 and snakemake (see dependencies), install the pipeline as follows:
 ```bash
 # Get pipeline
 $ git clone https://github.com/nanoporetech/pipeline-structural-variation.git
@@ -204,6 +211,7 @@ cDNA data is currently not supported
 | Abbreviation | Description |
 |--|--|
 | SV | Structural variation |
+| WGS | Whole genome sequencing |
 
 ### References and Supporting Information
 

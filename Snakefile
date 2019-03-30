@@ -21,17 +21,11 @@ configfile: os.path.join(CONFDIR, "config.yml")
 config['threads'] = 120
 
 if os.path.isabs(config["workdir_top"]):
-    WORKDIR = os.path.join(config["workdir_top"], config["pipeline"])
+    WORKDIR = os.path.join(config["workdir_top"], config["pipeline"] if "pipeline" in config else "")
 else:
-    WORKDIR = os.path.join(CONFDIR, config["workdir_top"], config["pipeline"])
+    WORKDIR = os.path.join(CONFDIR, config["workdir_top"], config["pipeline"] if "pipeline" in config else "")
 
-if os.path.isabs(config["resdir"]):
-    RESDIR =  config["resdir"]
-else:
-    RESDIR = os.path.join(CONFDIR, config["resdir"])
-
-
-workdir: os.path.join(config["workdir_top"], config["pipeline"])
+workdir: WORKDIR
 include: "snakelib/utils.snake"
 
 print("Working directory: {}".format(WORKDIR))
@@ -105,13 +99,15 @@ if "sample_name" in config:
 # Parameter: target
 target_bed = "{sample}/target.bed"
 if "target" in config:
-    target = os.path.join(CONFDIR, config["target"])
+    target = config["target"]
+    if not os.path.isabs(target):
+        target = os.path.join(CONFDIR, target)
     if os.path.exists(target):
-        # copyfile(target, "{}/target.bed".format(sample))
         target_bed = target
     else:
         print("Target BED {} not found. Continuing without target".format(target))
 
+print("Using {} as target file".format(target_bed))
 
 #########################
 ######## RULES ##########
@@ -233,9 +229,9 @@ rule filter_vcf:
     params:
         min_sv_length = config['min_sv_length'] if "min_sv_length" in config else 50,
         max_sv_length = config['max_sv_length'] if "max_sv_length" in config else 400000,
-        strand_support = config['advanced_strand_support'] if "advanced_strand_support" in config else 0.05,
+        strand_support = config['advanced_strand_support'] if "advanced_strand_support" in config else 0.001,
         sv_types = "DEL INS DUP",
-        min_af = config['advanced_min_af'] if "advanced_min_af" in config else 0.15
+        min_af = config['advanced_min_af'] if "advanced_min_af" in config else 0.10
     conda: "env.yml"
     shell:
          "sniffles-filter -v {input.VCF} -m `cat {input.RS}` -t {params.sv_types}  --strand-support {params.strand_support} -l {params.min_sv_length} --min-af {params.min_af} --max-length {params.max_sv_length} -o {output.VCF}"

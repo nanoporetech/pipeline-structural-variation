@@ -16,7 +16,7 @@ try:
                 sum_depth += float(cols[3]) * int(cols[2])
                 total_size += int(cols[2])
                 count_depth += 1
-        min_rs = round((sum_depth / total_size) * 0.3)
+        min_rs = round((sum_depth / total_size) * 0.25)
     else:
         min_rs = snakemake.config["min_read_support"]
 

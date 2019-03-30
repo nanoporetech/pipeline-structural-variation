@@ -21,21 +21,3 @@ rule clean_workdir: ## delete working directory. WARNING: all data will be lost!
     input:
         wdir = {WORKDIR}
     shell: "rm -r {input.wdir}"
-
-rule clean_resdir: ## delete results directory. WARNING: all data will be lost!
-    input:
-        res = RESDIR
-    shell: "rm -fr {input.res}/*"
-
-rule info: ## print pipeline information
-    params:
-        name = config["pipeline"],
-        wdir = WORKDIR,
-        repo = config["repo"],
-        res  = config["resdir"],
-    run:
-        print("Pipeline name: ", params.name)
-        print("Pipeline working directory: ", params.wdir)
-        print("Pipeline results directory: ", params.res)
-        print("Pipeline repository: ", params.repo)
-    
