@@ -154,7 +154,8 @@ rule index_minimap2:
 rule map_minimap2:
    input:
        FQ = FQ_INPUT_DIRECTORY,
-       IDX = rules.index_minimap2.output
+       IDX = rules.index_minimap2.output,
+       SETUP = "init"
    output:
        BAM = "{sample}/alignment/{sample}_minimap2.bam",
        BAI = "{sample}/alignment/{sample}_minimap2.bam.bai"

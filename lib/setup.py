@@ -11,7 +11,7 @@ setup(
     name='pipeline_structural_variation',
     version=__version__,
     author='metrichor-bio',
-    setup_requires=['pytest-runner'],
+    # setup_requires=['pytest-runner'],
     description='SV calling workflow python glue',
     zip_safe=False,
     install_requires=[
