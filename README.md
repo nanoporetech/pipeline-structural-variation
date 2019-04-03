@@ -236,96 +236,54 @@ You will find your results in the following locations:
 
 ```results/my_samples/sv_calls/my_sample_sniffles_filtered.vcf.gz```
 
-
 **What kind of structural variants are supported?**
-
-  
 
 Currently the pipeline has been validated to detect insertions, deletions and duplications from whole genome sequencing data. Support for inversions and translocations will be added in the future.
 
-  
-
 **What is the minimum SV length supported?**
-
-  
 
 Currently, 50 bp.
 
-  
-
 **How can i filter my reads by q-score?**
-
-  
 
 The most recent version of MinKNOW will perform filtering automatically. When using the FASTQ files from the `pass` output folder no additional filtering is required. For unfiltered datasets use [NanoFilt](https://github.com/wdecoster/nanofilt) with a minimum q-score of 6.
 
-  
-
 **How long will it take to run the pipeline for a 30X human dataset?**
-
-  
 
 When running with 30 CPU cores this will take roughly 6-8 hours.
 
-  
-
 **How much memory will I need?**
-
-  
 
 Memory consumption is determined by minimap2. Therefore, 16 GB will be required for human datasets. For smaller genomes 8 GB will be sufficient.
 
-  
-
 **How much storage will I need?**
 
-  
-
-Unzipped FASTQ files for a human 30X human dataset will require roughly 200 GB. In addition 150 GB will be required for the mapped BAM files.
-
-  
+Unzipped FASTQ files for a human 30X human dataset will require roughly 200 GB. In addition 150 GB will be required for the mapped BAM files.  
 
 **Are FAST5 files required to run the pipeline?**
 
-  
-
 No.
-
-  
 
 **Can I use the pipeline to detect variants in a cancer dataset or to detect somatic variants?**
 
-  
-
 The pipeline has not yet been validated on cancer samples or for somatic variant detection.
 
-  
-
 **Can I use the pipeline to detect SVs for targeted sequencing experiments (e.g. long amplicons, etc.)?**
-
-  
 
 Calling variants in targeted regions is supported but requires the user to specify a BED file containing the coordinates of the targeted regions.
 
 For example, save the following in a file called `targets.bed`
 
 ```
-
 chr1 6579767 6589767
-
 ```
 
 and run pipeline as follows:
 
 ```bash
-
 snakemake -j 30 eval --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa target_bed=targets.bed
-
 ```
-
 Make sure that the chromosome names in the BED file match the names in your reference FASTA files (e.g. chr1 vs. 1).
-
-  
 
 **Can I use this pipeline to detect gene fusions using DNA data?**
 
