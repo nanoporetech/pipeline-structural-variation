@@ -48,3 +48,7 @@ version:
 eval:
 	snakemake -p eval --config bam_folder=/Users/prescheneder/Analysis/sv-benchmark-data/chr12_data/GM24385_minimap2_sv_q7_chr12.bam target=/Users/prescheneder/Analysis/sv-benchmark-data/chr12_data/target.bed
 .PHONY: eval
+
+zip:
+	tar -czvf bin/$(PROJECT_NAME)_$(PROJECT_VERSION).tar.gz lib/ scripts/ snakelib/ config.yml COPYRIGHT env.yml LICENSE.md Makefile ONT_logo.png README.md Snakefile
+.PHONY: eval

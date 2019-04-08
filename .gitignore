@@ -9,3 +9,4 @@ lib/.eggs/
 lib/pipeline_structural_variation.egg-info/
 lib/pipeline_structural_variation/__pycache__/
 results/*
+bin/

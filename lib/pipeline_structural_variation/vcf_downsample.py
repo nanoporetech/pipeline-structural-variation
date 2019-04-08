@@ -2,18 +2,9 @@ from __future__ import print_function
 
 import os
 import sys
-import logging
-import base64
-import zlib
-import tempfile
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
-import pysam
-
-from sv_calling_glue.sniffles_telemetry import get_summary_from_vcf, \
-    compute_stats_from_bam
-from sv_calling_glue.sniffles_vcf import SvFile
-from sv_calling_glue.telemetry import Telemetry
+from pipeline_structural_variation.sniffles_vcf import SvFile
 
 
 def parse_args(argv):

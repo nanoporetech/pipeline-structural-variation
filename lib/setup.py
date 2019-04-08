@@ -28,7 +28,6 @@ setup(
             'sniffles-telemetry = pipeline_structural_variation.sniffles_telemetry:main',
             'sniffles-stats = pipeline_structural_variation.sniffles_stats:main',
             'sniffles-edit = pipeline_structural_variation.sniffles_edit:main',
-            'sniffles-strand = pipeline_structural_variation.sniffles_strand:main',
             'sniffles-sample = pipeline_structural_variation.vcf_downsample:main',
             'bamref2bed = pipeline_structural_variation.sniffles_bamref2bed:main',
             'cat_fastq = pipeline_structural_variation.cat_fastq:main'

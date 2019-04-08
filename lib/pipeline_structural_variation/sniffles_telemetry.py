@@ -8,8 +8,8 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import pysam
 
-from sv_calling_glue.sniffles_vcf import SvFile
-from sv_calling_glue.telemetry import Telemetry
+from pipeline_structural_variation.sniffles_vcf import SvFile
+from pipeline_structural_variation.telemetry import Telemetry
 
 
 def parse_args(argv):

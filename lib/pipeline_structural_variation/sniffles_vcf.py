@@ -2,13 +2,12 @@ import random
 import re
 import pybedtools
 import logging
-import sys
 
 from pysam import VariantFile
 from scipy.stats import fisher_exact
 from tqdm import tqdm
 
-from sv_calling_glue.sv import SvInfo
+from pipeline_structural_variation.sv import SvInfo
 
 
 class SvFile:

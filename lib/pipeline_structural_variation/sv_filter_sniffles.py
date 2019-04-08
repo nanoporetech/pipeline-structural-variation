@@ -2,10 +2,9 @@ import os
 import sys
 import logging
 
-from scipy.stats import fisher_exact
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
-from sv_calling_glue.sniffles_vcf import SvFile
+from pipeline_structural_variation.sniffles_vcf import SvFile
 
 
 def parse_args(argv):
