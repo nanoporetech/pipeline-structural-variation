@@ -13,12 +13,16 @@ The pipeline performs the following steps:
 - Produces QC report using NanoPlot
 - Estimates appropriate parameters for variant calling depending on read depth
 - Calls variants using sniffles
-- Filters variants
+- Filters variants by minimum/maximum length, read support, or type (e.g. insertion, deletion, etc.)
 
 ******************
 # Getting Started
+
+In most cases, it is best to pre-install conda and snakemake. All other dependencies will be installed automatically when running the pipeline for the first time. 
+If you want to run any of the tools used by the pipeline manually please see *Alternative installation methods* for instructions for setting up the conda environment manually.  
+
 ### Requirements
-To run the pipeline the following software packages have to be installed on your system:
+The following software packages must be installed prior to running:
 
 -  [miniconda3](https://conda.io/miniconda.html) - please refer to installation [instructions](https://conda.io/docs/user-guide/install/index.html).
 -  [snakemake](https://anaconda.org/bioconda/snakemake) - install using `conda` as follows:
@@ -26,7 +30,6 @@ To run the pipeline the following software packages have to be installed on your
 ```bash
 $ conda install -y snakemake
 ```
-Alternatively, you can run the pipeline using [docker](https://www.docker.com/). In this case only a working docker installation is required (see alternative installation methods below).
 
 ### Installation
 After installing miniconda3 and snakemake (see above), install the pipeline as follows:
@@ -37,11 +40,11 @@ $ wget -O pipeline-structural-variation.tar.gz https://github.com/nanoporetech/p
 $ tar xvzf pipeline-structural-variation.tar.gz
 # Change to directory
 $ cd pipeline-structural-variation-*
-# To test if the installation worked run
+# To test if the installation was successful
 $ snakemake --use-conda -p all
 ```
 
-When ran for the first time snakemake will automatically set up the required conda environment and install all necessary tools. Depending on hardware and connection speed this might take up to 10-20 min.
+When run for the first time snakemake will automatically set up the required conda environment and install all necessary tools. Depending on hardware and connection speed this might take 10-20 min.
 
 ### Input
 
@@ -75,27 +78,15 @@ $ snakemake -j 30 all --config input_fastq=/data/pass/ reference_fasta=/data/ref
 
 ### Alternative installation methods
 
-#### Run using docker
-
-To avoid installing *conda* on your system you can run the pipeline using docker. The only requirement is a working docker installation on your system. First build the docker image:
-
-```bash
-$ make build
-```
-Next, run the pipeline as follows:
-```bash
-docker run -ti -w `pwd` -v `pwd`:`pwd` pipeline-structural-variation snakemake all
-```
-
 #### Set up conda environment manually
-If you want to set up your conda environment manually follow the instructions below, activate the "environment" before running snakemake and skip the `--use-conda` parameter.
+If you want to set up your conda environment manually follow the instructions below, activate the "environment" before running snakemake and skip the `--use-conda` parameter when running the pipeline.
 ```bash
 # Download workflow as described in Installation and change into the unzipped directory
 # From the unzipped directory create conda environment
 $ conda env create -n pipeline-structural-variation -f env.yml
 # Activate environment
 $ conda activate pipeline-structural-variation
-# To test if the installation worked run (don't use --use-conda)
+# To test if the installation was successful, don't use --use-conda, instead run
 $ snakemake -p all
 # Deactivate environment
 $ conda deactivate
@@ -292,6 +283,19 @@ The current version does not support calling gene fusions from DNA data as trans
 **Can I use this pipeline to detect gene fusion using cDNA data?**
 
 cDNA data is not supported.
+
+**Can I run the pipeline using docker?**
+
+Yes. To build a docker image run:
+```bash
+$ make build
+```
+Next, run the pipeline as follows:
+```bash
+docker run -ti -w `pwd` -v `pwd`:`pwd` pipeline-structural-variation snakemake all
+```
+In the future we will provide a pre built docker image.
+
 
 ### Abbreviations and glossary
 | Term/Abbreviation | Description |
