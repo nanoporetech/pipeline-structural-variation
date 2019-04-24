@@ -87,7 +87,7 @@ else:
 
 
 # Input reference FASTA
-FA_REF = os.path.join(CONFDIR, config["reference_fastq"])
+FA_REF = os.path.join(CONFDIR, config["reference_fasta"])
 
 
 # Parameter: sample_name
