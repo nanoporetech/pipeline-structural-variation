@@ -24,7 +24,7 @@ If you want to run any of the tools used by the pipeline manually please see *Al
 ### Requirements
 The following software packages must be installed prior to running:
 
--  [miniconda3](https://conda.io/miniconda.html) - please refer to installation [instructions](https://conda.io/docs/user-guide/install/index.html).
+-  [miniconda3](https://conda.io/miniconda.html) - please refer to installation [instructions](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 -  [snakemake](https://anaconda.org/bioconda/snakemake) - install using `conda` as follows:
 
 ```bash
@@ -40,7 +40,7 @@ $ wget -O pipeline-structural-variation.tar.gz https://github.com/nanoporetech/p
 $ tar xvzf pipeline-structural-variation.tar.gz
 # Change to directory
 $ cd pipeline-structural-variation-*
-# To test if the installation was successful
+# To install all remaining dependencies and test if the installation was successful run
 $ snakemake --use-conda -p all
 ```
 
