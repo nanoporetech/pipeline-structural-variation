@@ -2,9 +2,7 @@
 # FASTQ file or folder containing FASTQ files
 input_fastq: "data/hg002_simple_test_chr12_44420446_44421533/"
 # FASTA file containing the reference genome
-reference_fastq: "data/test_reference/human_g1k_v37_part.fasta"
-# Minimum q-scores. Reads with lower q-score will be discarded
-min_qscore: 6
+reference_fasta: "data/test_reference/human_g1k_v37_part.fasta"
 # Minimum SV length
 min_sv_length: 40
 # Maximum SV length
