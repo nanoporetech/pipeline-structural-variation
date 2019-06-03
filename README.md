@@ -190,7 +190,7 @@ We benchmarked the pipeline against the preliminary [Genome in a bottle](https:/
 The pipeline was run using `auto` for determining the most suitable sniffles parameters to get a good balance between precision and recall. Depending on your application you might want to change the `min_read_support` parameter to maximize either precision or recall.
 
 | Dataset | Pipeline | Min. read support | Coverage | Precision | Recall |
-|-----------|---------|-------------|-------------|
+|-----------|---------|-------------|-------------|-------------|-------------|
 | HG002 q7 filtered | v1.5.0 | auto | 75* | 95.84 | 95.30 |
 | HG002 q7 filtered | v1.5.0 | auto | 60* | 95.86 | 95.42 |
 | HG002 q7 filtered | v1.5.0 | auto | 45* | 96.04 | 94.71 |
