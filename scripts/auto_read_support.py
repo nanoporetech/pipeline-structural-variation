@@ -23,8 +23,8 @@ try:
         min_rs = snakemake.config["min_read_support"]
 
     if min_rs < min_rs_limit:
-        print("Min read support < 5 not allowed. "
-              "Falling back to minimum of {}.".format(min_rs_limit))
+        print("Min read support {} not allowed. "
+              "Falling back to minimum of {}.".format(min_rs, min_rs_limit))
         min_rs = min_rs_limit
     print("Setting min. read support to {} for "
           "overall read depth of {}".format(min_rs,
