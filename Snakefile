@@ -159,14 +159,10 @@ rule map_minimap2:
    output:
        BAM = "{sample}/alignment/{sample}_minimap2.bam",
        BAI = "{sample}/alignment/{sample}_minimap2.bam.bai"
-   params:
-       min_qscore = config["min_qscore"] if "min_qscore" in config else 6,
-       min_read_length = config["min_read_length"] if "min_read_length" in config else 1000,
-       sort_threads = max(1, (max(1, config["threads"]) * 0.1))
    conda: "env.yml"
    threads: config["threads"]
    shell:
-       "cat_fastq {input.FQ} | minimap2 -t {threads} -ax map-ont --MD -Y {input.IDX} - | samtools sort -@ {params.sort_threads} -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
+       "cat_fastq {input.FQ} | minimap2 -t {threads} -K 5M -ax map-ont --MD -Y {input.IDX} - | samtools sort -@ {threads} -O BAM -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
 
 
 rule bed_from_bam:
