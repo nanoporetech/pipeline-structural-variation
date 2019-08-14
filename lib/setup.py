@@ -15,7 +15,7 @@ setup(
     description='SV calling workflow python glue',
     zip_safe=False,
     install_requires=[
-        'pysam==0.14.1',
+        'pysam',
         'pybedtools',
         'scipy',
         'tqdm'
