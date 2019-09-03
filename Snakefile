@@ -160,7 +160,7 @@ rule map_minimap2:
    conda: "env.yml"
    threads: config["threads"]
    shell:
-       "cat_fastq {input.FQ} | minimap2 -t {threads} -K 5M -ax map-ont --MD -Y {input.IDX} - | samtools sort -@ {threads} -O BAM -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
+       "cat_fastq {input.FQ} | minimap2 -t {threads} -K 500M -ax map-ont --MD -Y {input.IDX} - | samtools sort -@ {threads} -O BAM -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
 
 
 rule bed_from_bam:
