@@ -20,6 +20,9 @@ sample_name: "my_sample"
 # regions contained in the BED file
 # target: "data/test_reference/test_target.bed"
 
+# Only accept calls supported by both strands
+# p-value from fisher exact test. Calls with a lower p-value will be discarded
+advanced_strand_support: 0.01
 
 #################################
 ## General pipeline parameters ##
