@@ -32,12 +32,13 @@ print("Working directory: {}".format(WORKDIR))
 ### HELPER FUNCTIONS ####
 #########################
 
-def find_file_in_folder(folder, pattern="*.fastq", single=False):
+def find_file_in_folder(folder, pattern=["*/*.fastq", "*/*.fastq.gz", "*.fastq", "*.fastq.gz"], single=False):
     if os.path.isfile(folder):
         return folder
     files = []
-    for file in glob.glob(os.path.join(folder, pattern)):
-       files.append(file)
+    for pattern in patterns:
+        for file in glob.glob(os.path.join(folder, pattern), recursive=True):
+            files.append(file)
 
     if len(files) == 0:
         print("Could not find {} files in {}".format(pattern, folder))
@@ -224,7 +225,7 @@ rule filter_vcf:
     params:
         min_sv_length = config['min_sv_length'] if "min_sv_length" in config else 50,
         max_sv_length = config['max_sv_length'] if "max_sv_length" in config else 400000,
-        strand_support = config['advanced_strand_support'] if "advanced_strand_support" in config else 0.001,
+        strand_support = config['advanced_strand_support'] if "advanced_strand_support" in config else 0.01,
         sv_types = "DEL INS DUP",
         min_af = config['advanced_min_af'] if "advanced_min_af" in config else 0.10
     conda: "env.yml"

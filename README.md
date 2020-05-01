@@ -35,7 +35,7 @@ $ conda install -y snakemake
 After installing miniconda3 and snakemake (see above), install the pipeline as follows:
 ```bash
 # Get pipeline
-$ wget -O pipeline-structural-variation.tar.gz https://github.com/nanoporetech/pipeline-structural-variation/archive/v1.4.0.tar.gz
+$ wget -O pipeline-structural-variation.tar.gz https://github.com/nanoporetech/pipeline-structural-variation/archive/v1.6.0.tar.gz
 # Unzip
 $ tar xvzf pipeline-structural-variation.tar.gz
 # Change to directory

@@ -78,15 +78,16 @@ def parse_args(argv):
     return args
 
 
-def find_file_in_folder(folder, pattern="*.fastq"):
+def find_file_in_folder(folder, patterns=["*/*.fastq", "*/*.fastq.gz", "*.fastq", "*.fastq.gz"]):
     if os.path.isfile(folder):
         return folder
     files = []
-    for file in glob.glob(os.path.join(folder, pattern)):
-       files.append(file)
+    for pattern in patterns:
+        for file in glob.glob(os.path.join(folder, pattern), recursive=True):
+           files.append(file)
 
     if len(files) == 0:
-        logging.warning("Could not find {} files in {}".format(pattern, folder))
+        logging.warning("Could not find {} files in {}".format(", ".join(patterns), folder))
 
     return files
 
