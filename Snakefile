@@ -28,10 +28,6 @@ include: "snakelib/utils.snake"
 
 print("Working directory: {}".format(WORKDIR))
 
-# If threads are not set, set to maximum
-if "threads" not in config:
-    config['threads'] = 120
-
 #########################
 ### HELPER FUNCTIONS ####
 #########################
@@ -149,7 +145,6 @@ rule index_minimap2:
        REF = FA_REF
    output:
        "{sample}/index/minimap2.idx"
-   threads: config['threads']
    conda: "env.yml"
    shell:
        "minimap2 -t {threads} -ax map-ont --MD -Y {input.REF} -d {output}"
@@ -163,7 +158,6 @@ rule map_minimap2:
        BAM = "{sample}/alignment/{sample}_minimap2.bam",
        BAI = "{sample}/alignment/{sample}_minimap2.bam.bai"
    conda: "env.yml"
-   threads: config["threads"]
    shell:
        "cat_fastq {input.FQ} | minimap2 -t {threads} -K 500M -ax map-ont --MD -Y {input.IDX} - | samtools sort -@ {threads} -O BAM -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
 
@@ -191,7 +185,7 @@ rule call_sniffles:
         min_read_length = config['min_read_length'] if 'min_read_length' in config else 1000,
         min_mq = config['min_read_mapping_quality'] if 'min_read_mapping_quality' in config else 20
     conda: "env.yml"
-    threads: config["threads"]
+    threads: 10
     shell:
         "sniffles -m {input.BAM} -v {output.VCF} -s {params.read_support} -r {params.min_read_length} -q {params.min_mq} --genotype --report_read_strands"
 
@@ -263,7 +257,6 @@ rule nanoplot_qc:
         DIR = directory("{sample}/qc")
     params:
         sample = sample
-    threads: config["threads"]
     conda: "env.yml"
     shell:
         "NanoPlot -t {threads} --bam {input.BAM} --raw -o {output.DIR} -p {params.sample}_ --N50 --title {params.sample} --downsample 100000"
@@ -275,7 +268,6 @@ rule calc_depth:
          BED = target_bed
     output:
         DIR = directory("{sample}/depth"),
-    threads: config["threads"]
     conda: "env.yml"
     shell:
          "mkdir -p {output.DIR}; mosdepth -x -t {threads} -n -b {input.BED} {output.DIR}/{sample} {input.BAM}"
@@ -321,7 +313,7 @@ rule download_truvari:
     shell:
          "wget https://raw.githubusercontent.com/spiralgenetics/truvari/ceee1e76f12452c75037be1b5ed3b00da8c10df8/truvari.py"
 
-            
+
 rule intersect_target_highconf:
     input:
         TRUTH_BED = rules.download_hg002_truthset.output.BED,
