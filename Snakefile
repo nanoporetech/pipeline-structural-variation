@@ -146,6 +146,7 @@ rule index_minimap2:
    output:
        "{sample}/index/minimap2.idx"
    conda: "env.yml"
+   threads: 30
    shell:
        "minimap2 -t {threads} -ax map-ont --MD -Y {input.REF} -d {output}"
 
@@ -158,6 +159,7 @@ rule map_minimap2:
        BAM = "{sample}/alignment/{sample}_minimap2.bam",
        BAI = "{sample}/alignment/{sample}_minimap2.bam.bai"
    conda: "env.yml"
+   threads: 120
    shell:
        "cat_fastq {input.FQ} | minimap2 -t {threads} -K 500M -ax map-ont --MD -Y {input.IDX} - | samtools sort -@ {threads} -O BAM -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
 
@@ -258,6 +260,7 @@ rule nanoplot_qc:
     params:
         sample = sample
     conda: "env.yml"
+    threads: 60
     shell:
         "NanoPlot -t {threads} --bam {input.BAM} --raw -o {output.DIR} -p {params.sample}_ --N50 --title {params.sample} --downsample 100000"
 
@@ -269,6 +272,7 @@ rule calc_depth:
     output:
         DIR = directory("{sample}/depth"),
     conda: "env.yml"
+    threads: 30
     shell:
          "mkdir -p {output.DIR}; mosdepth -x -t {threads} -n -b {input.BED} {output.DIR}/{sample} {input.BAM}"
 
