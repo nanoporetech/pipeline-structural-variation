@@ -18,33 +18,29 @@ The pipeline performs the following steps:
 ******************
 # Getting Started
 
-In most cases, it is best to pre-install conda and snakemake. All other dependencies will be installed automatically when running the pipeline for the first time. 
-If you want to run any of the tools used by the pipeline manually please see *Alternative installation methods* for instructions for setting up the conda environment manually.  
-
 ### Requirements
 The following software packages must be installed prior to running:
 
 -  [miniconda3](https://conda.io/miniconda.html) - please refer to installation [instructions](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
--  [snakemake](https://anaconda.org/bioconda/snakemake) - install using `conda` as follows:
-
-```bash
-$ conda install -y snakemake=5.4.3
-```
 
 ### Installation
 After installing miniconda3 and snakemake (see above), install the pipeline as follows:
 ```bash
 # Get pipeline
-$ wget -O pipeline-structural-variation.tar.gz https://github.com/nanoporetech/pipeline-structural-variation/archive/1.6.0.tar.gz
+$ wget -O pipeline-structural-variation.tar.gz https://github.com/nanoporetech/pipeline-structural-variation/archive/v1.6.1.tar.gz
 # Unzip
 $ tar xvzf pipeline-structural-variation.tar.gz
 # Change to directory
 $ cd pipeline-structural-variation-*
-# To install all remaining dependencies and test if the installation was successful run
-$ snakemake --use-conda -p all
+# Create conda environment with all dependencies
+$ conda env create -n pipeline-structural-variation -f env.yml
+# Activate environment
+$ conda activate pipeline-structural-variation
+# To test if the installation was successful, don't use --use-conda, instead run
+$ snakemake -p all
+# Deactivate environment
+$ conda deactivate
 ```
-
-When run for the first time snakemake will automatically set up the required conda environment and install all necessary tools. Depending on hardware and connection speed this might take 10-20 min.
 
 ### Input
 
@@ -54,11 +50,11 @@ To run the pipeline the following input files are required:
 |-------|-------------|
 | Reference genome | FASTA file containing the reference genome (e.g. GRCh38 for human) |
 | Nanopore reads| Folder containing FASTQ files or a single concatenated FASTQ file. Reads should be **q-score filtered** (see FAQ)|
- 
+
 ### Output
 
  The main output files created by the pipeline are:
- 
+
 | Output | Description |
 |--------|-------------|
 | Aligned reads | Aligned reads in indexed and sorted BAM format |
@@ -75,22 +71,6 @@ $ snakemake -j 30 all --config input_fastq=/data/pass/ reference_fasta=/data/ref
 ```
 
 `-j` specifies how many CPU cores will be used by the pipeline. `all` is the default target (see Targets); this will run all steps required for SV calling and produce a QC report for the input reads using NanoPlot. `input_fastq` specifies the input FASTQ files or a folder containing multiple input FASTQ files (e.g. the pass folder from MinKNOW).
-
-### Alternative installation methods
-
-#### Set up conda environment manually
-If you want to set up your conda environment manually follow the instructions below, activate the "environment" before running snakemake and skip the `--use-conda` parameter when running the pipeline.
-```bash
-# Download workflow as described in Installation and change into the unzipped directory
-# From the unzipped directory create conda environment
-$ conda env create -n pipeline-structural-variation -f env.yml
-# Activate environment
-$ conda activate pipeline-structural-variation
-# To test if the installation was successful, don't use --use-conda, instead run
-$ snakemake -p all
-# Deactivate environment
-$ conda deactivate
-```
 
 ### Targets
 
