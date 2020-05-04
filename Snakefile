@@ -28,6 +28,10 @@ include: "snakelib/utils.snake"
 
 print("Working directory: {}".format(WORKDIR))
 
+# If threads are not set, set to maximum
+if "threads" not in config:
+    config['threads'] = 120
+
 #########################
 ### HELPER FUNCTIONS ####
 #########################
