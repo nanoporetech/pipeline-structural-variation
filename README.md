@@ -28,7 +28,7 @@ The following software packages must be installed prior to running:
 -  [snakemake](https://anaconda.org/bioconda/snakemake) - install using `conda` as follows:
 
 ```bash
-$ conda install -y snakemake
+$ conda install -y snakemake=5.4.3
 ```
 
 ### Installation
