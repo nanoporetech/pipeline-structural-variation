@@ -36,7 +36,7 @@ $ cd pipeline-structural-variation-*
 $ conda env create -n pipeline-structural-variation -f env.yml
 # Activate environment
 $ conda activate pipeline-structural-variation
-# To test if the installation was successful, don't use --use-conda, instead run
+# To test if the installation was successful run
 $ snakemake -p all
 # Deactivate environment
 $ conda deactivate
