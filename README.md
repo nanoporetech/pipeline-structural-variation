@@ -9,10 +9,10 @@
 ### Features
 
 The pipeline performs the following steps:
-- Maps reads using minimap2
-- Produces QC report using NanoPlot
+- Maps reads using lra
+- Produces QC report using NanoPlot [optional]
 - Estimates appropriate parameters for variant calling depending on read depth
-- Calls variants using sniffles
+- Calls variants using cuteSV
 - Filters variants by minimum/maximum length, read support, or type (e.g. insertion, deletion, etc.)
 
 ******************
@@ -24,20 +24,19 @@ The following software packages must be installed prior to running:
 -  [miniconda3](https://conda.io/miniconda.html) - please refer to installation [instructions](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 ### Installation
-After installing miniconda3 and snakemake (see above), install the pipeline as follows:
+After installing miniconda3 (see above), install the pipeline as follows:
 ```bash
 # Get pipeline
-$ wget -O pipeline-structural-variation.tar.gz https://github.com/nanoporetech/pipeline-structural-variation/archive/v1.6.1.tar.gz
-# Unzip
+$ wget -O pipeline-structural-variation.tar.gz https://git.oxfordnanolabs.local/apps/oxf/pipeline-structural-variation/-/archive/master/pipeline-structural-variation-master.tar.gz
 $ tar xvzf pipeline-structural-variation.tar.gz
 # Change to directory
-$ cd pipeline-structural-variation-*
+$ cd pipeline-structural-variation*
 # Create conda environment with all dependencies
-$ conda env create -n pipeline-structural-variation -f env.yml
+$ conda env create -n pipeline-structural-variation-v2 -f env.yml
 # Activate environment
-$ conda activate pipeline-structural-variation
+$ conda activate pipeline-structural-variation-v2
 # To test if the installation was successful run
-$ snakemake -p all
+$ snakemake -p -j 1 --configfile config.yml
 # Deactivate environment
 $ conda deactivate
 ```
@@ -60,23 +59,22 @@ To run the pipeline the following input files are required:
 | Aligned reads | Aligned reads in indexed and sorted BAM format |
 | Variant calls | Called variants in VCF format |
 
-After the pipeline has finished you can find the aligned reads in `{output_folder}/alignment/` and the indexed and zipped VCF file in `output_folder/sv_calls/{sample_name}_sniffles_filtered.vcf`.
+After the pipeline has finished you can find the aligned reads in `{sample_name}/alignment/` and the indexed and zipped VCF file in `{sample_name}/sv_calls/{sample_name}_cutesv_filtered.vcf.gz`, where `{sample_name}` is derived from the snakemake configuration (see below).
 
 ### Usage:
 
 To run the pipeline with default settings invoke snakemake as follows.
 
 ```bash
-$ snakemake -j 30 all --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa
+$ snakemake all --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa threads=30
 ```
 
-`-j` specifies how many CPU cores will be used by the pipeline. `all` is the default target (see Targets); this will run all steps required for SV calling and produce a QC report for the input reads using NanoPlot. `input_fastq` specifies the input FASTQ files or a folder containing multiple input FASTQ files (e.g. the pass folder from MinKNOW).
+`all` is the default target (see Targets); this will run all steps required for SV calling and produce a QC report for the input reads using NanoPlot. `input_fastq` specifies the input FASTQ files or a folder containing multiple input FASTQ files (e.g. the pass folder from MinKNOW).
 
 ### Targets
 
 |Name| Description |
 |--|--|
-| all | Maps reads, calls variants and produces a QC report from the input reads |
 | qc | Only maps reads and produces a QC report |
 | call | Maps reads and calls variants but does not produce a QC report |
 | eval | Evaluates the called variants against the GIAB truth set **only** applicable when sequencing [HG002](https://www.coriell.org/0/Sections/Search/Sample_Detail.aspx?Ref=NA24385&Product=DNA) |
@@ -87,7 +85,7 @@ The pipeline accepts several input parameters. They can either be changed in the
 
 For example:
 ```bash
-snakemake -j 30 eval --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa min_sv_length=100
+snakemake eval --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa min_sv_length=100 threads=30
 ```
 In the above example the minimum SV length parameter was changed to 100 bp.
 
@@ -105,10 +103,10 @@ These parameters have to be specified to run the pipeline.
 | Parameter | Allowed | Default | Description |
 |-----------|---------|---------|-------------|
 | sample_name | string without spaces | my_sample | Name of the sample |
-| min_sv_length | Integer > 40 | 50 | Minimum SV length |
-| max_sv_length | Integer | 1000000 | Maximum SV length |
+| min_sv_length | Integer > 30 | 30 | Minimum SV length |
+| max_sv_length | Integer | 100000 | Maximum SV length |
 | min_read_length | Integer | 1000 | Min read length. Shorter reads will be ignored |
-| min_read_mapping_quality | Integer | 10 | Min mapping quality. Reads with lower mapping quality will be discarded |
+| min_read_mapping_quality | Integer | 20 | Min mapping quality. Reads with lower mapping quality will be discarded |
 | min_read_support | Integer | 'auto' | Minimum read support required to call a SV (auto for auto-detect) |
 
 # Annotating and visualising the results
@@ -167,14 +165,15 @@ Supported format: BAM, BED, VCF
 We benchmarked the pipeline against the preliminary [Genome in a bottle](https://jimb.stanford.edu/giab) SV truth set for HG002.
 
 ### Precision and Recall
-The pipeline was run using `auto` for determining the most suitable sniffles parameters to get a good balance between precision and recall. Depending on your application you might want to change the `min_read_support` parameter to maximize either precision or recall.
+The pipeline was run using `auto` for determining the most suitable cuteSV parameters to get a good balance between precision and recall. Depending on your application you might want to change the `min_read_support` parameter to maximize either precision or recall.
 
-| Dataset | Pipeline | Min. read support | Coverage | Precision | Recall |
-|-----------|---------|-------------|-------------|-------------|------------
-| HG002 q7 filtered | v1.5.0 | auto | 60* | 95.86 | 95.42 |
-| HG002 q7 filtered | v1.5.0 | auto | 45* | 96.04 | 94.71 |
-| HG002 q7 filtered | v1.5.0 | auto | 30* | 96.44 | 92.93 |
-| HG002 q7 filtered | v1.5.0 | auto | 15* | 96.72 | 87.88 |
+| Dataset | Pipeline | Min. read support | Coverage | Precision | Recall | Precision gt | Recall gt |
+|-----------|---------|-------------|-------------|-------------|------------|-------------|------------
+| HG002 q7 filtered | v2.0.0 | auto | 60* | 0.955 | 0.979 | 0.945 | 0.979 |
+| HG002 q7 filtered | v2.0.0 | auto | 45* | 0.956 | 0.977 | 0.942 | 0.977 |
+| HG002 q7 filtered | v2.0.0 | auto | 30* | 0.953 | 0.971 | 0.934 | 0.970 |
+| HG002 q7 filtered | v2.0.0 | auto | 20* | 0.954 | 0.959 | 0.923 | 0.957 |
+| HG002 q7 filtered | v2.0.0 | auto | 15* | 0.952 | 0.938 | 0.904 | 0.935 |
 
 \* Coverage was computed using mosdepth from the BAM file. The BAM file was neither filtered by mapping quality nor read length.
 
@@ -195,25 +194,25 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 **I only want my results! What should I do?**
 Install pipeline (see Installation) and run as follows.
 ```bash
-$ snakemake -j 16 all --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa
+$ snakemake all --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa threads=16
 ```
 You will find your results in the following locations:
 
 **Aligned reads:**
 
-```results/my_samples/alignment/my_sample_minimap2.bam```
+```sv_sample01/alignment/my_sample_lra.bam```
 
 **Variant calls:**
 
-```results/my_samples/sv_calls/my_sample_sniffles_filtered.vcf.gz```
+```sv_sample01/sv_calls/my_sample_cutesv_filtered.vcf.gz```
 
 **What kind of structural variants are supported?**
 
-Currently the pipeline has been validated to detect insertions, deletions and duplications from whole genome sequencing data. Support for inversions and translocations will be added in the future.
+Currently the pipeline has been validated to detect insertions, deletions and duplications (currently reported as insertions as in the GIAB truthset) from whole genome sequencing data. Support for inversions and translocations will be added in the future.
 
 **What is the minimum SV length supported?**
 
-Currently, 50 bp.
+Currently, 30 bp.
 
 **How can i filter my reads by q-score?**
 
@@ -221,11 +220,11 @@ The most recent version of MinKNOW will perform filtering automatically. When us
 
 **How long will it take to run the pipeline for a 30X human dataset?**
 
-When running with 30 CPU cores this will take roughly 6-8 hours.
+When running with 30 CPU cores this will take roughly 3-4 hours.
 
 **How much memory will I need?**
 
-Memory consumption is determined by minimap2. Therefore, 16 GB will be required for human datasets. For smaller genomes 8 GB will be sufficient.
+Memory consumption is determined by lra. Therefore, 16 GB will be required for human datasets. For smaller genomes 8 GB will be sufficient.
 
 **How much storage will I need?**
 
@@ -252,7 +251,7 @@ chr1 6579767 6589767
 and run pipeline as follows:
 
 ```bash
-snakemake -j 30 eval --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa target_bed=targets.bed
+snakemake eval --config input_fastq=/data/pass/ reference_fasta=/data/ref/hg38.fa target_bed=targets.bed threads=30
 ```
 Make sure that the chromosome names in the BED file match the names in your reference FASTA files (e.g. chr1 vs. 1).
 
@@ -263,18 +262,6 @@ The current version does not support calling gene fusions from DNA data as trans
 **Can I use this pipeline to detect gene fusion using cDNA data?**
 
 cDNA data is not supported.
-
-**Can I run the pipeline using docker?**
-
-Yes. To build a docker image run:
-```bash
-$ make build
-```
-Next, run the pipeline as follows:
-```bash
-docker run -ti -w `pwd` -v `pwd`:`pwd` pipeline-structural-variation snakemake all
-```
-In the future we will provide a pre built docker image.
 
 
 ### Abbreviations and glossary
@@ -289,8 +276,8 @@ In the future we will provide a pre built docker image.
 ### References and Supporting Information
 
 If you use this pipeline please cite:
-- Li, H. (2018). Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics, 34(18), 3094–3100. https://doi.org/10.1093/bioinformatics/bty191
-- Sedlazeck, F. J., Rescheneder, P., Smolka, M., Fang, H., Nattestad, M., von Haeseler, A., & Schatz, M. C. (2018). Accurate detection of complex structural variations using single-molecule sequencing. Nature Methods, 15(6), 461–468. https://doi.org/10.1038/s41592-018-0001-7
+- Ren L, Chaisson M (2020). lra: the Long Read Aligner for Sequences and Contigs. BioRxiv doi: https://doi.org/10.1101/2020.11.15.383273
+- Jiang, T., Liu, Y., Jiang, Y. et al. (2020).Long-read-based human genomic structural variation detection with cuteSV. Genome Biol 21, 189. https://doi.org/10.1186/s13059-020-02107-y
 - Pedersen, B. S., & Quinlan, A. R. (2018). Mosdepth: quick coverage calculation for genomes and exomes. Bioinformatics, 34(5), 867–868. https://doi.org/10.1093/bioinformatics/btx699
 
 When using the QC report please also cite:

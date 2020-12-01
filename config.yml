@@ -4,9 +4,9 @@ input_fastq: "data/hg002_simple_test_chr12_44420446_44421533/"
 # FASTA file containing the reference genome
 reference_fasta: "data/test_reference/human_g1k_v37_part.fasta"
 # Minimum SV length
-min_sv_length: 40
+min_sv_length: 30
 # Maximum SV length
-max_sv_length: 1000000
+max_sv_length: 100000
 # Min read length. Shorter reads will be discarded
 min_read_length: 1000
 # Min mapping quality. Reads will lower mapping quality will be discarded
@@ -14,20 +14,12 @@ min_read_mapping_quality: 20
 # Minimum read support required to call a SV (auto for auto-detect)
 min_read_support: 'auto'
 # Sample name
-sample_name: "my_sample"
+sample_name: "sv_sample01"
+
+# (optional) Threads
+# default is a max of 30
+# threads: 30
 
 # (optional) BED file containing targeted regions. SVs will only be called in
 # regions contained in the BED file
-# target: "data/test_reference/test_target.bed"
-
-# Only accept calls supported by both strands
-# p-value from fisher exact test. Calls with a lower p-value will be discarded
-advanced_strand_support: 0.01
-
-#################################
-## General pipeline parameters ##
-#################################
-# path to directory holding the working directory:
-workdir_top: "results/"
-# Repository URL:
-repo: "https://github.com/nanoporetech/pipeline-structural-variation.git"
+# target_bed : "data/test_reference/test_target.bed"

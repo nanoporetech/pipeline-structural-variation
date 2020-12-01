@@ -1,0 +1,2 @@
+## [2.0.0] - 2020-11-26
+- Pipeline rewrite to use lra and cuteSV

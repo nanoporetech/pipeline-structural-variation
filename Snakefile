@@ -1,6 +1,4 @@
 import os
-import glob
-import gzip
 
 from shutil import copyfile
 from snakemake.utils import min_version
@@ -16,49 +14,18 @@ if workflow.configfiles:
     if os.path.isabs(conf_dir):
         CONFDIR = path.dirname(conf_dir)
 
-configfile: os.path.join(CONFDIR, "config.yml")
-
-if os.path.isabs(config["workdir_top"]):
-    WORKDIR = os.path.join(config["workdir_top"], config["pipeline"] if "pipeline" in config else "")
-else:
-    WORKDIR = os.path.join(CONFDIR, config["workdir_top"], config["pipeline"] if "pipeline" in config else "")
+WORKDIR = "."
+if config.get("workdir_top"):
+    if os.path.isabs(config["workdir_top"]):
+        WORKDIR = os.path.join(config.get("workdir_top", ""))
+    else:
+        WORKDIR = os.path.join(CONFDIR, config["workdir_top"])
 
 workdir: WORKDIR
-include: "snakelib/utils.snake"
 
 print("Working directory: {}".format(WORKDIR))
 
-#########################
-### HELPER FUNCTIONS ####
-#########################
-
-def find_file_in_folder(folder, pattern=["*/*.fastq", "*/*.fastq.gz", "*.fastq", "*.fastq.gz"], single=False):
-    if os.path.isfile(folder):
-        return folder
-    files = []
-    for pattern in patterns:
-        for file in glob.glob(os.path.join(folder, pattern), recursive=True):
-            files.append(file)
-
-    if len(files) == 0:
-        print("Could not find {} files in {}".format(pattern, folder))
-
-    if single:
-        if len(files) > 1:
-            print("Warning: Multiple {} files found in {}".format(pattern, folder))
-        return files[0]
-    else:
-        return files
-
-def get_param_from_file(filename, default=0):
-    try:
-        with open(filename, "r") as fh:
-            return int(float(fh.readline().strip()))
-    except Exception as e:
-        print(e)
-        print("Could not read parameter from {}. Falling back to default: {}".format(filename, default))
-        return default
-
+pipeline_version="2.0.2"
 
 #########################
 ###### PARAMETERS #######
@@ -67,7 +34,7 @@ def get_param_from_file(filename, default=0):
 
 # INPUT BAM folder
 bam = None
-if "bam" in config:
+if config.get("bam"):
     bam = os.path.join(CONFDIR, config["bam"])
 
 # INPUT FASTQ folder
@@ -80,163 +47,131 @@ if not bam:
     if not os.path.exists(FQ_INPUT_DIRECTORY):
         print("Could not find {}".format(FQ_INPUT_DIRECTORY))
 
-    MAPPED_BAM = "{sample}/alignment/{sample}_minimap2.bam"
+    MAPPED_BAM = "{sample}/alignment/{sample}_lra.bam"
 else:
-    MAPPED_BAM = find_file_in_folder(bam, "*.bam", single=True)
+    MAPPED_BAM = bam
+    if not os.path.exists(bam):
+        print("Could not find {}".format(bam))
 
 
 # Input reference FASTA
 FA_REF = os.path.join(CONFDIR, config["reference_fasta"])
+if not os.path.exists(FA_REF):
+    print("Could not find {}".format(FA_REF))
 
+# Reference index name
+FA_REF_INDEX = FA_REF + ".gli"
 
 # Parameter: sample_name
-sample = "sv_sample01"
-if "sample_name" in config:
-    sample = config['sample_name']
+sample = config.get('sample_name', "sv_sample01")
 
-
-# Parameter: target
-target_bed = "{sample}/target.bed"
-if "target" in config:
-    target = config["target"]
+# Parameter: target_bed
+target_bed = ""
+if config.get("target_bed"):
+    target = config["target_bed"]
     if not os.path.isabs(target):
         target = os.path.join(CONFDIR, target)
     if os.path.exists(target):
         target_bed = target
+        print("Using {} as target file".format(target_bed))
     else:
         print("Target BED {} not found. Continuing without target".format(target))
 
-print("Using {} as target file".format(target_bed))
+thread_n = config.get("threads", 30)
 
 #########################
 ######## RULES ##########
 #########################
 
-rule all:
-    input:
-        expand("{name}/sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
-        expand("{name}/qc", name=sample),
-
 rule call:
     input:
-        expand("{name}/sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
+        expand("{name}/sv_calls/{name}_cutesv_filtered.vcf.gz", name=sample),
+        expand("{name}/version.txt", name=sample)
 
 rule qc:
     input:
         expand("{name}/qc", name=sample),
-
-rule json:
-    input:
-        expand("{name}/sv_calls/{name}_sniffles_filtered.vcf.gz", name=sample),
-        expand("{name}/json/{name}_sniffles_filtered.json", name=sample),
+        expand("{name}/version.txt", name=sample)
 
 rule eval:
     input:
         expand("{name}/evaluation_summary.json", name=sample),
+        expand("{name}/version.txt", name=sample)
 
-rule init:
-    output: "init"
-    conda: "env.yml"
+
+rule print_version:
+    output:
+        "{name}/version.txt"
+    params:
+        version = pipeline_version
     shell:
-        "pip install {SNAKEDIR}/lib &> {output}"
+        "echo {params.version} > {output}"
 
-rule index_minimap2:
+
+rule index_lra:
    input:
        REF = FA_REF
    output:
-       "{sample}/index/minimap2.idx"
+       INDEX = FA_REF_INDEX
    conda: "env.yml"
-   threads: 30
+   threads: thread_n
    shell:
-       "minimap2 -t {threads} -ax map-ont --MD -Y {input.REF} -d {output}"
+       "lra index -ONT {input}"
 
-rule map_minimap2:
+rule map_lra:
    input:
        FQ = FQ_INPUT_DIRECTORY,
-       IDX = rules.index_minimap2.output,
-       SETUP = "init"
+       REF = FA_REF,
+       INDEX = FA_REF_INDEX,
    output:
-       BAM = "{sample}/alignment/{sample}_minimap2.bam",
-       BAI = "{sample}/alignment/{sample}_minimap2.bam.bai"
+       BAM = "{sample}/alignment/{sample}_lra.bam",
+       BAI = "{sample}/alignment/{sample}_lra.bam.bai"
    conda: "env.yml"
-   threads: 120
+   threads: thread_n
+   benchmark: "{sample}/benchmarks/map_lra_{sample}.time"
    shell:
-       "cat_fastq {input.FQ} | minimap2 -t {threads} -K 500M -ax map-ont --MD -Y {input.IDX} - | samtools sort -@ {threads} -O BAM -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
+       "catfishq -r {input.FQ} | seqtk seq -A - | lra align -ONT -t {threads} {input.REF} - -p s | samtools addreplacerg -r \"@RG\tID:{sample}\tSM:{sample}\" - | samtools sort -@ {threads} -T {sample} -O BAM -o {output.BAM} - && samtools index -@ {threads} {output.BAM}"
 
 
-rule bed_from_bam:
+rule call_cutesv:
     input:
         BAM = MAPPED_BAM,
-        SETUP = "init"
+        REF = FA_REF,
     output:
-        "{sample}/target.bed"
+        VCF = "{sample}/sv_calls/{sample}_cutesv_tmp.vcf"
     params:
-        filter = "_Un _random"
+        min_size = config.get("min_sv_length", 30),
+        max_size = config.get("max_sv_length", 100000),
+        min_read_support = 2,
+        min_read_length = config.get("min_read_length", 1000),
+        min_mq = config.get("min_read_mapping_quality", 20),
     conda: "env.yml"
+    threads: thread_n
+    benchmark: "{sample}/benchmarks/call_cutesv_{sample}.time"
     shell:
-        "bamref2bed -b {input.BAM} -f {params.filter} > {output}"
-
-
-rule call_sniffles:
-    input:
-        BAM = MAPPED_BAM,
-    output:
-        VCF = "{sample}/sv_calls/{sample}_sniffles_tmp.vcf"
-    params:
-        read_support = 3,
-        min_read_length = config['min_read_length'] if 'min_read_length' in config else 1000,
-        min_mq = config['min_read_mapping_quality'] if 'min_read_mapping_quality' in config else 20
-    conda: "env.yml"
-    threads: 10
-    shell:
-        "sniffles -t {threads} -m {input.BAM} -v {output.VCF} -s {params.read_support} -r {params.min_read_length} -q {params.min_mq} --genotype --report_read_strands"
-
-
-rule filter_region:
-   input:
-       VCF = rules.call_sniffles.output.VCF,
-       BED = rules.bed_from_bam.output,
-       SETUP = "init"
-   output:
-       VCF = temp("{sample}/sv_calls/{sample}_sniffles_region_filtered.vcf")
-   conda: "env.yml"
-   shell:
-        "bcftools view -T {input.BED} {input.VCF} -o {output.VCF}"
-
-
-rule reformat_vcf:
-    input:
-         VCF = rules.filter_region.output.VCF,
-         SETUP = "init"
-    output:
-         VCF = "{sample}/sv_calls/{sample}_sniffles.vcf"
-    conda: "env.yml"
-    shell:
-         "sniffles-edit --ins-length --check --vcf-version -v {input.VCF} -o {output.VCF}"
+        "cuteSV -t {threads} --min_size {params.min_size} --max_size  {params.max_size} -S {sample} --retain_work_dir --report_readid --min_support {params.min_read_support} --genotype {input.BAM} {input.REF} {output.VCF} {sample}/sv_calls/ "
 
 
 rule filter_vcf:
     input:
-         VCF = rules.reformat_vcf.output.VCF,
-         RS = "{sample}/parameter_min_read_support.tsv",
-         SETUP = "init"
+         MOS = "{sample}/depth",
+         VCF = rules.call_cutesv.output.VCF,
     output:
-         VCF = temp("{sample}/sv_calls/{sample}_sniffles_filtered_tmp.vcf")
+         VCF = temp("{sample}/sv_calls/{sample}_cutesv_filtered_tmp.vcf")
     params:
-        min_sv_length = config['min_sv_length'] if "min_sv_length" in config else 50,
-        max_sv_length = config['max_sv_length'] if "max_sv_length" in config else 400000,
-        strand_support = config['advanced_strand_support'] if "advanced_strand_support" in config else 0.01,
-        sv_types = "DEL INS DUP",
-        min_af = config['advanced_min_af'] if "advanced_min_af" in config else 0.10
+        min_sv_length = config.get("min_sv_length", 30),
+        max_sv_length = config.get("max_sv_length", 100000),
+        target_bed = config.get("target_bed", None),
+        sv_types = config.get("sv_type", "DEL INS"),
     conda: "env.yml"
-    shell:
-         "sniffles-filter -v {input.VCF} -m `cat {input.RS}` -t {params.sv_types}  --strand-support {params.strand_support} -l {params.min_sv_length} --min-af {params.min_af} --max-length {params.max_sv_length} -o {output.VCF}"
+    wrapper:
+         f"file:{CONFDIR}/wrappers/filter"
 
 rule sort_vcf:
     input:
         VCF = rules.filter_vcf.output.VCF
     output:
-        VCF = temp("{sample}/sv_calls/{sample}_sniffles_filtered.vcf")
+        VCF = temp("{sample}/sv_calls/{sample}_cutesv_filtered.vcf")
     conda: "env.yml"
     shell:
          "vcfsort {input.VCF} > {output.VCF}"
@@ -246,7 +181,7 @@ rule index_vcf:
     input:
          VCF = rules.sort_vcf.output.VCF
     output:
-         VCF = "{sample}/sv_calls/{sample}_sniffles_filtered.vcf.gz"
+         VCF = "{sample}/sv_calls/{sample}_cutesv_filtered.vcf.gz"
     conda: "env.yml"
     shell:
          "cat {input.VCF} | bgziptabix {output.VCF}"
@@ -260,7 +195,7 @@ rule nanoplot_qc:
     params:
         sample = sample
     conda: "env.yml"
-    threads: 60
+    threads: thread_n
     shell:
         "NanoPlot -t {threads} --bam {input.BAM} --raw -o {output.DIR} -p {params.sample}_ --N50 --title {params.sample} --downsample 100000"
 
@@ -268,36 +203,14 @@ rule nanoplot_qc:
 rule calc_depth:
     input:
          BAM = MAPPED_BAM,
-         BED = target_bed
     output:
         DIR = directory("{sample}/depth"),
+    params:
+        BED = config.get("target", "1000000")
     conda: "env.yml"
-    threads: 30
+    threads: thread_n
     shell:
-         "mkdir -p {output.DIR}; mosdepth -x -t {threads} -n -b {input.BED} {output.DIR}/{sample} {input.BAM}"
-
-
-rule auto_read_support:
-    input:
-         "{sample}/depth"
-    output:
-         "{sample}/parameter_min_read_support.tsv"
-    conda: "env.yml"
-    script:
-         "{}/scripts/auto_read_support.py".format(SNAKEDIR)
-
-rule telemetry:
-    input:
-         BAM = MAPPED_BAM,
-         VCF = rules.sort_vcf.output.VCF,
-         DEPTH = rules.calc_depth.output.DIR,
-         RS = rules.auto_read_support.output,
-         SETUP = "init"
-    output:
-          "{sample}/json/{sample}_sniffles_filtered.json"
-    conda: "env.yml"
-    shell:
-         "sniffles-telemetry -v {input.VCF} -b {input.BAM} -d {input.DEPTH}/{sample}.regions.bed.gz -s {input.RS} > {output}"
+        "mkdir -p {output.DIR}; mosdepth -x -t {threads} -n -b {params.BED} {output.DIR}/{sample} {input.BAM}"
 
 
 rule download_hg002_truthset:
@@ -310,34 +223,38 @@ rule download_hg002_truthset:
         "wget https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.vcf.gz && wget https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.vcf.gz.tbi && wget https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.bed"
 
 
-rule download_truvari:
-    output:
-        "truvari.py"
-    conda: "env.yml"
-    shell:
-         "wget https://raw.githubusercontent.com/spiralgenetics/truvari/ceee1e76f12452c75037be1b5ed3b00da8c10df8/truvari.py"
-
-
 rule intersect_target_highconf:
     input:
         TRUTH_BED = rules.download_hg002_truthset.output.BED,
-        TARGET = target_bed
+        VCF = rules.index_vcf.output.VCF
     output:
         BED = "{sample}/eval_high_conf.bed"
     conda: "env.yml"
     shell:
-        "bedtools intersect -a {input.TRUTH_BED} -b {input.TARGET} > {output.BED}"
+        "bedtools intersect -a {input.TRUTH_BED} -b {input.VCF} -u > {output.BED}"
+
+rule eval_reformat:
+    input:
+        VCF = rules.index_vcf.output.VCF,
+    output:
+        VCF = "{sample}/sv_calls/{sample}_cutesv_filtered_eval.vcf.gz",
+    conda: "env.yml"
+    shell:
+        "zcat {input.VCF} | sed 's/SVTYPE=DUP/SVTYPE=INS/g' |  bcftools view -i '(SVTYPE = \"INS\" || SVTYPE = \"DEL\")' | bgziptabix {output.VCF}"
 
 
 rule eval_vcf:
     input:
-        SCRIPT = "truvari.py",
-        VCF = rules.index_vcf.output.VCF,
+        VCF = rules.eval_reformat.output.VCF,
         REF = FA_REF,
         TRUTH_VCF = rules.download_hg002_truthset.output.VCF,
         TRUTH_BED = rules.intersect_target_highconf.output.BED
     output:
-        "{sample}/evaluation_summary.json",
+        dir = directory("{sample}/evaluation/"),
+        summary = "{sample}/evaluation_summary.json"
     conda: "env.yml"
     shell:
-        "python {input.SCRIPT} --passonly -b {input.TRUTH_VCF} --includebed {input.TRUTH_BED} --pctsize 0 --pctsim 0 -t -c {input.VCF} -f {input.REF} -o {sample}/eval/ > {output}"
+        """
+        truvari bench --passonly -b {input.TRUTH_VCF} --includebed {input.TRUTH_BED} --pctsim 0 -c {input.VCF} -f {input.REF} -o {sample}/eval/ -o {output.dir}
+        cp {output.dir}/summary.txt {output.summary}
+        """
