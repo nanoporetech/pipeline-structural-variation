@@ -27,7 +27,7 @@ The following software packages must be installed prior to running:
 After installing miniconda3 (see above), install the pipeline as follows:
 ```bash
 # Get pipeline
-$ wget -O pipeline-structural-variation.tar.gz https://git.oxfordnanolabs.local/apps/oxf/pipeline-structural-variation/-/archive/master/pipeline-structural-variation-master.tar.gz
+$ wget -O pipeline-structural-variation.tar.gz https://github.com/nanoporetech/pipeline-structural-variation/archive/v2.0.2.tar.gz
 $ tar xvzf pipeline-structural-variation.tar.gz
 # Change to directory
 $ cd pipeline-structural-variation*
@@ -185,7 +185,7 @@ Run the pipeline with HG002 data using the `eval` target. In the output folder y
 # Help
 ## Licence and Copyright
 
-(c) 2018 Oxford Nanopore Technologies Ltd.
+(c) 2020 Oxford Nanopore Technologies Ltd.
 
 This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
@@ -287,3 +287,8 @@ When using the QC report please also cite:
 
 -  [Nanopore Structural Variation Knowledge exchange](https://nanoporetech.com/resource-centre/knowledge-exchange-exploring-structural-variation-nanopore-sequencing)
 -  [100 tomato genomes in 100 days](https://vimeo.com/304389956)
+
+
+### Research Release
+
+Research releases are provided as technology demonstrators to provide early access to features or stimulate Community development of tools. Support for this software will be minimal and is only provided directly by the developers. Feature requests, improvements, and discussions are welcome and can be implemented by forking and pull requests. However much as we would like to rectify every issue and piece of feedback users may have, the developers may have limited resource for support of this software. Research releases may be unstable and subject to rapid iteration by Oxford Nanopore Technologies.
